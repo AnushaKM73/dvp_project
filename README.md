@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # INDIA TOURISM ANALYTICS AND BUSINESS INTELLIGENCE DASHBOARD
 > **Tagline:** *Discover Destinations. Analyse Tourism. Visualize Insights.*  
 > **Course:** Data Visualization with Python (DVP) Laboratory Project  
@@ -143,3 +144,6 @@ The application generates Star-Schema compatible tables in `exports/` and a cons
 * **NLP & Text Mining:** Stopword-filtered WordCloud and real VADER sentiment analysis on tourist reviews.
 * **Rigorous Statistical EDA:** Parametric distributions, skewness analysis, IQR outlier fences, and correlation heatmaps with Seaborn.
 
+=======
+# dvp_project
+>>>>>>> 36cbd289d3a72f69c04fe4dcdd073a6969b53023
