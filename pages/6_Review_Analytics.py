@@ -6,7 +6,12 @@ Natural Language Processing (NLP), WordCloud visualization, keyword frequency, a
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
+try:
+    from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+    HAS_VADER = True
+except ImportError:
+    HAS_VADER = False
 from utils.ui_components import (
     apply_theme,
     render_page_header,
@@ -30,7 +35,11 @@ filtered_df = render_sidebar_filters()
 
 render_page_header(
     title="Tourist Review & Text Analytics",
-    subtitle="Semantic text mining, WordCloud generation, keyword frequency distribution, and VADER sentiment classification",
+    subtitle=(
+        "Review themes and "
+        + ("VADER sentiment analysis" if HAS_VADER else "rule-based keyword sentiment")
+        + " across the selected records"
+    ),
     badge="POWER BI DASHBOARD 6 • NLP & REVIEWS"
 )
 
@@ -39,25 +48,55 @@ if filtered_df.empty:
     st.stop()
 
 # -------------------------------------------------------------
-# REAL VADER SENTIMENT CLASSIFICATION
+# REAL VADER SENTIMENT CLASSIFICATION (WITH LEXICON FALLBACK)
 # -------------------------------------------------------------
+if not HAS_VADER:
+    st.info("VADER is unavailable, so sentiment uses a simple keyword-count rule. Treat these scores as a rough text signal, not a nuanced sentiment measure.")
+
 @st.cache_data
 def compute_sentiment_scores(reviews_series):
-    analyzer = SentimentIntensityAnalyzer()
-    sentiments = []
-    compound_scores = []
-    for r in reviews_series:
-        text = str(r) if pd.notna(r) else ""
-        scores = analyzer.polarity_scores(text)
-        comp = scores['compound']
-        compound_scores.append(comp)
-        if comp >= 0.05:
-            sentiments.append("Positive")
-        elif comp <= -0.05:
-            sentiments.append("Negative")
-        else:
-            sentiments.append("Neutral")
-    return sentiments, compound_scores
+    if HAS_VADER:
+        analyzer = SentimentIntensityAnalyzer()
+        sentiments = []
+        compound_scores = []
+        for r in reviews_series:
+            text = str(r) if pd.notna(r) else ""
+            scores = analyzer.polarity_scores(text)
+            comp = scores['compound']
+            compound_scores.append(comp)
+            if comp >= 0.05:
+                sentiments.append("Positive")
+            elif comp <= -0.05:
+                sentiments.append("Negative")
+            else:
+                sentiments.append("Neutral")
+        return sentiments, compound_scores
+    else:
+        pos_words = {'great', 'good', 'excellent', 'amazing', 'wonderful', 'beautiful', 'awesome', 'best',
+                     'loved', 'love', 'fantastic', 'nice', 'pleasant', 'superb', 'peaceful', 'stunning',
+                     'breathtaking', 'memorable', 'clean', 'scenic', 'rich', 'must-visit', 'charming', 'worth'}
+        neg_words = {'bad', 'poor', 'terrible', 'horrible', 'worst', 'dirty', 'crowded', 'expensive',
+                     'disappointed', 'disappointing', 'rude', 'noisy', 'overrated', 'avoid', 'unpleasant'}
+        sentiments = []
+        compound_scores = []
+        for r in reviews_series:
+            text = str(r).lower() if pd.notna(r) else ""
+            tokens = set(text.split())
+            pos_cnt = len(tokens.intersection(pos_words))
+            neg_cnt = len(tokens.intersection(neg_words))
+            diff = pos_cnt - neg_cnt
+            if diff > 0:
+                comp = min(1.0, 0.25 + 0.15 * diff)
+                sentiment = "Positive"
+            elif diff < 0:
+                comp = max(-1.0, -0.25 - 0.15 * abs(diff))
+                sentiment = "Negative"
+            else:
+                comp = 0.0
+                sentiment = "Neutral"
+            compound_scores.append(round(comp, 3))
+            sentiments.append(sentiment)
+        return sentiments, compound_scores
 
 analysis_df = filtered_df.copy()
 analysis_df['Sentiment'], analysis_df['Polarity_Score'] = compute_sentiment_scores(analysis_df['Review'])
@@ -66,19 +105,26 @@ pos_pct = round((analysis_df['Sentiment'] == 'Positive').mean() * 100, 1)
 neu_pct = round((analysis_df['Sentiment'] == 'Neutral').mean() * 100, 1)
 neg_pct = round((analysis_df['Sentiment'] == 'Negative').mean() * 100, 1)
 avg_polarity = round(analysis_df['Polarity_Score'].mean(), 3)
+score_label = "VADER compound" if HAS_VADER else "Rule-based score"
+positive_rule = "VADER compound ≥ +0.05" if HAS_VADER else "Keyword score above zero"
+neutral_rule = (
+    "VADER compound between -0.05 and +0.05"
+    if HAS_VADER else "Positive and negative keyword hits balance"
+)
+sentiment_chart_title = "VADER Sentiment Split" if HAS_VADER else "Keyword Rule Sentiment Split"
 
 # -------------------------------------------------------------
 # REVIEW KPIS
 # -------------------------------------------------------------
 c1, c2, c3, c4 = st.columns(4)
 with c1:
-    render_kpi_card("Total Reviews", f"{len(analysis_df):,}", "Verified tourist logs", "#0284c7", "💬")
+    render_kpi_card("Review Records", f"{len(analysis_df):,}", "Current filtered sample", "#0284c7", "💬")
 with c2:
-    render_kpi_card("Positive Sentiment", f"{pos_pct}%", "VADER polarity >= +0.05", "#10b981", "😊")
+    render_kpi_card("Positive Sentiment", f"{pos_pct}%", positive_rule, "#10b981", "😊")
 with c3:
-    render_kpi_card("Neutral / Moderate", f"{neu_pct}%", "Factual observations", "#6366f1", "😐")
+    render_kpi_card("Neutral Sentiment", f"{neu_pct}%", neutral_rule, "#6366f1", "😐")
 with c4:
-    render_kpi_card("Average Polarity", f"{avg_polarity:+0.3f}", "Scale: -1.0 to +1.0", "#f97316", "📊")
+    render_kpi_card(f"Average {score_label}", f"{avg_polarity:+0.3f}", "Score range: -1 to +1", "#f97316", "📊")
 
 st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
@@ -128,7 +174,7 @@ with col_senti:
         hole=0.6,
         color='Sentiment',
         color_discrete_map={'Positive': '#10b981', 'Neutral': '#64748b', 'Negative': '#f43f5e'},
-        title="VADER Sentiment Classification Split"
+        title=sentiment_chart_title
     )
     fig_s.update_traces(textinfo='percent+label', marker=dict(line=dict(color='#ffffff', width=2)))
     st.plotly_chart(apply_pbi_theme(fig_s), use_container_width=True)
@@ -183,6 +229,7 @@ st.markdown(f"**Found {len(matched_reviews):,} matching reviews**")
 if not matched_reviews.empty:
     display_reviews = matched_reviews[['Visitor_ID', 'Place', 'State', 'Rating', 'Sentiment', 'Polarity_Score', 'Review']].copy()
     display_reviews['Polarity_Score'] = display_reviews['Polarity_Score'].round(3)
+    display_reviews = display_reviews.rename(columns={'Polarity_Score': score_label})
     st.dataframe(display_reviews, use_container_width=True, height=280)
 else:
     st.info("No reviews matched your search keyword.")

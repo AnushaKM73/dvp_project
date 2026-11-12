@@ -15,6 +15,7 @@ from utils.ui_components import (
 )
 from utils.visualizations import (
     create_india_folium_map,
+    create_india_footfall_heatmap,
     plot_category_by_state,
     plot_location_type_distribution,
     apply_pbi_theme
@@ -71,8 +72,20 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-folium_map = create_india_folium_map(filtered_df)
+map_mode = st.radio(
+    "Map layer",
+    ["Destination clusters", "Estimated footfall heatmap"],
+    horizontal=True,
+    key="geography_map_mode",
+)
+folium_map = (
+    create_india_folium_map(filtered_df)
+    if map_mode == "Destination clusters"
+    else create_india_footfall_heatmap(filtered_df)
+)
 st_folium(folium_map, width="100%", height=520)
+if map_mode == "Estimated footfall heatmap":
+    st.caption("Heat intensity is weighted by estimated visitor counts at destination coordinates; smoothing is a visual aid, not measured density between sites.")
 
 st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # INDIA TOURISM ANALYTICS AND BUSINESS INTELLIGENCE DASHBOARD
 > **Tagline:** *Discover Destinations. Analyse Tourism. Visualize Insights.*  
 > **Course:** Data Visualization with Python (DVP) Laboratory Project  
@@ -140,10 +139,10 @@ The application generates Star-Schema compatible tables in `exports/` and a cons
 
 * **Dynamic Python Calculations:** Zero hardcoded dashboard values; all charts, KPIs, and insights calculate dynamically based on active filters.
 * **Global Filter Panel:** Interactive sidebar slicers (State, Category, Season, Age Group, Gender, Travel Group) that synchronously update all charts and tables.
-* **Interactive India GIS Mapping:** Accurate geographical coordinates for all 20 Indian landmarks rendered with category color badges and interactive popups.
-* **NLP & Text Mining:** Stopword-filtered WordCloud and real VADER sentiment analysis on tourist reviews.
+* **Live Segment & Metric Explorer:** Compare visitor records, estimated footfall, ratings, trip cost, stay length, and popularity by destination, state, category, season, travel group, or age group.
+* **Destination Sunburst:** Drill from state to tourism category to destination, sized by estimated footfall and colored by average rating.
+* **Interactive India GIS Mapping:** Switch between destination clusters and a smoothed heat layer weighted by estimated visitor counts at mapped destination coordinates.
+* **Review Text Analysis:** Stopword-filtered word cloud and VADER sentiment, with an explicitly labeled keyword fallback when the package is unavailable.
 * **Rigorous Statistical EDA:** Parametric distributions, skewness analysis, IQR outlier fences, and correlation heatmaps with Seaborn.
 
-=======
-# dvp_project
->>>>>>> 36cbd289d3a72f69c04fe4dcdd073a6969b53023
+

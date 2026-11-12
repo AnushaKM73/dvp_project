@@ -8,3 +8,4 @@ folium>=0.15.0
 streamlit-folium>=0.18.0
 openpyxl>=3.1.0
 wordcloud>=1.9.0
+vaderSentiment>=3.3.2

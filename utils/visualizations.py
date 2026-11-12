@@ -16,7 +16,7 @@ import seaborn as sns
 from wordcloud import WordCloud, STOPWORDS
 import io
 import folium
-from folium.plugins import MarkerCluster
+from folium.plugins import HeatMap, MarkerCluster
 
 # Power BI Color Palettes
 PBI_PALETTE = ['#0284c7', '#0d9488', '#f97316', '#6366f1', '#10b981', '#ec4899', '#eab308', '#8b5cf6', '#14b8a6', '#f43f5e']
@@ -97,22 +97,108 @@ def plot_category_distribution(df):
 
 
 def plot_monthly_trend(df):
-    """Line chart: Monthly tourism volume."""
+    """Show the distribution of visitor records across calendar months."""
     month_order = [
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     ]
     monthly = df.groupby('Visit_Month')['Visitor_ID'].count().reindex(month_order).dropna().reset_index()
     monthly.columns = ['Month', 'Records']
-    fig = px.line(
+    fig = px.bar(
         monthly,
         x='Month',
         y='Records',
-        markers=True,
-        line_shape='spline',
-        title="Monthly Tourism Traffic Trends"
+        text='Records',
+        color='Records',
+        color_continuous_scale=px.colors.sequential.Teal,
+        title="Visitor Records by Month"
     )
-    fig.update_traces(line=dict(color='#0284c7', width=3), marker=dict(size=8, color='#f97316'))
+    fig.update_traces(textposition='outside')
+    fig.update_layout(coloraxis_showscale=False, xaxis_title="Visit month", yaxis_title="Visitor records")
+    return apply_pbi_theme(fig)
+
+
+def plot_segment_metric(df, dimension, metric):
+    """Compare a selectable tourism measure across one visitor or destination segment."""
+    dimensions = {
+        "State": "State",
+        "Destination": "Place",
+        "Category": "Category",
+        "Season": "Season",
+        "Travel group": "Travel_Group",
+        "Age group": "Age_Group",
+    }
+    measures = {
+        "Visitor records": ("Visitor_ID", "count"),
+        "Estimated footfall": ("Visitors_Count", "sum"),
+        "Average rating": ("Rating", "mean"),
+        "Average estimated cost (INR)": ("Estimated_Cost_INR", "mean"),
+        "Average stay (days)": ("Stay_Days", "mean"),
+        "Average popularity score": ("Popularity_Score", "mean"),
+    }
+    dimension_col = dimensions[dimension]
+    measure_col, aggregation = measures[metric]
+    summary = (
+        df.groupby(dimension_col, dropna=True)
+        .agg(Value=(measure_col, aggregation))
+        .sort_values("Value", ascending=False)
+        .head(12)
+        .sort_values("Value", ascending=True)
+        .reset_index()
+    )
+
+    if metric == "Average rating":
+        labels = summary["Value"].map(lambda value: f"{value:.2f}")
+    elif metric == "Average estimated cost (INR)":
+        labels = summary["Value"].map(lambda value: f"₹{value:,.0f}")
+    elif metric == "Average stay (days)":
+        labels = summary["Value"].map(lambda value: f"{value:.1f}")
+    elif metric == "Average popularity score":
+        labels = summary["Value"].map(lambda value: f"{value:.1f}")
+    else:
+        labels = summary["Value"].map(lambda value: f"{value:,.0f}")
+
+    fig = px.bar(
+        summary,
+        x="Value",
+        y=dimension_col,
+        orientation="h",
+        text=labels,
+        color="Value",
+        color_continuous_scale=px.colors.sequential.Teal,
+        title=f"{metric} by {dimension.lower()}",
+        labels={"Value": metric, dimension_col: dimension},
+    )
+    fig.update_traces(textposition="outside", cliponaxis=False)
+    fig.update_layout(yaxis=dict(autorange="reversed"), coloraxis_showscale=False)
+    return apply_pbi_theme(fig)
+
+
+def plot_destination_sunburst(df):
+    """Show state-to-category-to-destination hierarchy by estimated footfall."""
+    hierarchy = (
+        df.groupby(["State", "Category", "Place"], dropna=True)
+        .agg(
+            Estimated_Footfall=("Visitors_Count", "sum"),
+            Average_Rating=("Rating", "mean"),
+        )
+        .reset_index()
+    )
+    fig = px.sunburst(
+        hierarchy,
+        path=["State", "Category", "Place"],
+        values="Estimated_Footfall",
+        color="Average_Rating",
+        color_continuous_scale="RdYlGn",
+        range_color=(1, 5),
+        color_continuous_midpoint=3,
+        hover_data={
+            "Estimated_Footfall": ":,.0f",
+            "Average_Rating": ":.2f",
+        },
+        title="Estimated Footfall: State → Category → Destination",
+    )
+    fig.update_layout(coloraxis_colorbar_title="Avg rating")
     return apply_pbi_theme(fig)
 
 
@@ -245,6 +331,41 @@ def create_india_folium_map(df):
             weight=2
         ).add_to(marker_cluster)
 
+    return m
+
+
+def create_india_footfall_heatmap(df):
+    """Map estimated visitor counts as a smoothed heat layer at destination coordinates."""
+    m = folium.Map(
+        location=[21.7679, 78.8718],
+        zoom_start=5,
+        tiles="OpenStreetMap",
+        control_scale=True,
+    )
+    destination_volume = (
+        df.groupby(["Place", "State"], dropna=True)
+        .agg(
+            Footfall=("Visitors_Count", "sum"),
+            Latitude=("Latitude", "first"),
+            Longitude=("Longitude", "first"),
+        )
+        .reset_index()
+    )
+    heat_points = [
+        [row.Latitude, row.Longitude, max(float(row.Footfall), 0.0)]
+        for row in destination_volume.itertuples(index=False)
+        if pd.notna(row.Latitude) and pd.notna(row.Longitude)
+    ]
+    if heat_points:
+        HeatMap(
+            heat_points,
+            name="Estimated visitor footfall",
+            radius=28,
+            blur=22,
+            min_opacity=0.25,
+            max_zoom=7,
+        ).add_to(m)
+    folium.LayerControl(collapsed=False).add_to(m)
     return m
 
 

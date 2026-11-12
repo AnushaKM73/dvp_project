@@ -6,7 +6,12 @@ Natural Language Processing (NLP), WordCloud visualization, keyword frequency, a
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
+try:
+    from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+    HAS_VADER = True
+except ImportError:
+    HAS_VADER = False
 from utils.ui_components import (
     apply_theme,
     render_page_header,
@@ -39,25 +44,55 @@ if filtered_df.empty:
     st.stop()
 
 # -------------------------------------------------------------
-# REAL VADER SENTIMENT CLASSIFICATION
+# REAL VADER SENTIMENT CLASSIFICATION (WITH LEXICON FALLBACK)
 # -------------------------------------------------------------
+if not HAS_VADER:
+    st.info("💡 **Tip:** Install `vaderSentiment` via `pip install vaderSentiment` for advanced VADER sentiment scores. Currently running built-in sentiment classification.")
+
 @st.cache_data
 def compute_sentiment_scores(reviews_series):
-    analyzer = SentimentIntensityAnalyzer()
-    sentiments = []
-    compound_scores = []
-    for r in reviews_series:
-        text = str(r) if pd.notna(r) else ""
-        scores = analyzer.polarity_scores(text)
-        comp = scores['compound']
-        compound_scores.append(comp)
-        if comp >= 0.05:
-            sentiments.append("Positive")
-        elif comp <= -0.05:
-            sentiments.append("Negative")
-        else:
-            sentiments.append("Neutral")
-    return sentiments, compound_scores
+    if HAS_VADER:
+        analyzer = SentimentIntensityAnalyzer()
+        sentiments = []
+        compound_scores = []
+        for r in reviews_series:
+            text = str(r) if pd.notna(r) else ""
+            scores = analyzer.polarity_scores(text)
+            comp = scores['compound']
+            compound_scores.append(comp)
+            if comp >= 0.05:
+                sentiments.append("Positive")
+            elif comp <= -0.05:
+                sentiments.append("Negative")
+            else:
+                sentiments.append("Neutral")
+        return sentiments, compound_scores
+    else:
+        pos_words = {'great', 'good', 'excellent', 'amazing', 'wonderful', 'beautiful', 'awesome', 'best',
+                     'loved', 'love', 'fantastic', 'nice', 'pleasant', 'superb', 'peaceful', 'stunning',
+                     'breathtaking', 'memorable', 'clean', 'scenic', 'rich', 'must-visit', 'charming', 'worth'}
+        neg_words = {'bad', 'poor', 'terrible', 'horrible', 'worst', 'dirty', 'crowded', 'expensive',
+                     'disappointed', 'disappointing', 'rude', 'noisy', 'overrated', 'avoid', 'unpleasant'}
+        sentiments = []
+        compound_scores = []
+        for r in reviews_series:
+            text = str(r).lower() if pd.notna(r) else ""
+            tokens = set(text.split())
+            pos_cnt = len(tokens.intersection(pos_words))
+            neg_cnt = len(tokens.intersection(neg_words))
+            diff = pos_cnt - neg_cnt
+            if diff > 0:
+                comp = min(1.0, 0.25 + 0.15 * diff)
+                sentiment = "Positive"
+            elif diff < 0:
+                comp = max(-1.0, -0.25 - 0.15 * abs(diff))
+                sentiment = "Negative"
+            else:
+                comp = 0.0
+                sentiment = "Neutral"
+            compound_scores.append(round(comp, 3))
+            sentiments.append(sentiment)
+        return sentiments, compound_scores
 
 analysis_df = filtered_df.copy()
 analysis_df['Sentiment'], analysis_df['Polarity_Score'] = compute_sentiment_scores(analysis_df['Review'])

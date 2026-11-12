@@ -5,6 +5,8 @@ Academic Project for Data Visualization with Python (DVP) Laboratory
 
 import streamlit as st
 import pandas as pd
+from streamlit_folium import st_folium
+
 from utils.ui_components import (
     apply_theme,
     render_page_header,
@@ -14,216 +16,271 @@ from utils.ui_components import (
 from utils.data_analysis import compute_executive_kpis
 from utils.insights import generate_automated_insights
 from utils.visualizations import (
-    plot_state_distribution,
-    plot_category_distribution,
-    plot_monthly_trend
+    plot_monthly_trend,
+    plot_segment_metric,
+    plot_destination_sunburst,
+    plot_seasonal_distribution,
+    plot_recommendation_pie,
+    create_india_folium_map,
+    create_india_footfall_heatmap,
+    plot_category_by_state,
+    plot_location_type_distribution,
+    plot_age_distribution,
+    plot_gender_distribution,
+    plot_travel_group_distribution,
+    plot_age_vs_travel_heatmap,
+    plot_rating_vs_popularity_scatter,
+    plot_quality_radar,
+    plot_cost_vs_stay,
+    plot_correlation_matrix
 )
 
 # Page Configuration
 st.set_page_config(
-    page_title="India Tourism Analytics & BI Dashboard",
-    page_icon="🧭",
+    page_title="India Tourism Analytics | DVP Dashboard",
+    page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# Apply Power BI Theme
+# Apply Power BI Dashboard Theme
 apply_theme()
 
 # Sidebar Global Filters
 filtered_df = render_sidebar_filters()
 
-# Header Banner
+# Dashboard Control Bar
 render_page_header(
-    title="INDIA TOURISM ANALYTICS & BUSINESS INTELLIGENCE DASHBOARD",
-    subtitle="Discover Destinations • Analyse Tourism • Visualize Insights • College DVP Laboratory Project",
-    badge="ACADEMIC DVP PROJECT • PYTHON & POWER BI ARCHITECTURE"
+    title="INDIA TOURISM, IN THE DATA",
+    subtitle="Explore where visitors go, how they travel, and what shapes their experience.",
+    badge="DVP LABORATORY • ACADEMIC DASHBOARD"
 )
 
+if filtered_df.empty:
+    st.warning("⚠️ No records match the active filter criteria. Please reset or adjust your sidebar filters.")
+    st.stop()
+
 # -------------------------------------------------------------
-# WOW FACTOR: 1-CLICK FACULTY DEMO PRESETS
+# QUICK INTERACTIVE SLICER PRESETS (VIVA DEMO BAR)
 # -------------------------------------------------------------
-with st.expander("🎓 Faculty Laboratory Viva & Instant Demo Presets (Click to Auto-Slice)", expanded=False):
-    st.markdown("<div style='font-size: 13px; color: #64748b; margin-bottom: 8px;'>Demonstrate dynamic real-time slicer recalculations across all KPIs, charts, and insights with a single click:</div>", unsafe_allow_html=True)
+with st.expander("⚡ Interactive Viva Slicer Presets (Click to Test Real-time Recalculations)", expanded=False):
     p_col1, p_col2, p_col3, p_col4 = st.columns(4)
 
-    if p_col1.button("🎒 Preset: Solo & Adventure", use_container_width=True):
+    if p_col1.button("🎒 Solo Adventure Cohort", use_container_width=True):
         st.session_state['filter_categories'] = ['Adventure']
         st.session_state['filter_travel_groups'] = ['Solo']
         st.session_state['filters_applied'] = True
         st.rerun()
 
-    if p_col2.button("👨‍👩‍👧 Preset: Heritage Family", use_container_width=True):
+    if p_col2.button("👨‍👩‍👧 Heritage Family Circuit", use_container_width=True):
         st.session_state['filter_categories'] = ['Historical', 'Cultural']
         st.session_state['filter_travel_groups'] = ['Family']
         st.session_state['filters_applied'] = True
         st.rerun()
 
-    if p_col3.button("🌴 Preset: South India Circuit", use_container_width=True):
+    if p_col3.button("🌴 South India Region", use_container_width=True):
         st.session_state['filter_states'] = ['Karnataka', 'Kerala', 'Tamil Nadu']
         st.session_state['filters_applied'] = True
         st.rerun()
 
-    if p_col4.button("🔄 Reset to Full Dataset", use_container_width=True):
-        st.session_state['filter_states'] = []
-        st.session_state['filter_categories'] = []
-        st.session_state['filter_location_types'] = []
-        st.session_state['filter_seasons'] = []
-        st.session_state['filter_months'] = []
-        st.session_state['filter_age_groups'] = []
-        st.session_state['filter_genders'] = []
-        st.session_state['filter_travel_groups'] = []
-        st.session_state['filter_recommended'] = []
+    if p_col4.button("🔄 Reset All Filters", use_container_width=True):
+        for key in ['filter_states', 'filter_categories', 'filter_location_types',
+                    'filter_seasons', 'filter_months', 'filter_age_groups',
+                    'filter_genders', 'filter_travel_groups', 'filter_recommended']:
+            st.session_state[key] = []
         st.session_state['filters_applied'] = False
         st.rerun()
 
 # -------------------------------------------------------------
-# EXECUTIVE KPI CARDS ROW
+# EXECUTIVE KPI SUMMARY METRIC CARDS
 # -------------------------------------------------------------
 kpis = compute_executive_kpis(filtered_df)
 
-col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
-
+col1, col2, col3, col4 = st.columns(4)
 with col1:
-    render_kpi_card("Total Records", f"{kpis['total_records']:,}", "Verified visits", border_color="#0284c7", icon="📋")
+    render_kpi_card("Visitor Records", f"{kpis['total_records']:,}", "Current filtered sample", "#0284c7", "📊")
 with col2:
-    render_kpi_card("Total States", f"{kpis['total_states']}", "Pan-India coverage", border_color="#0d9488", icon="🗺️")
+    render_kpi_card("Destinations", f"{kpis['unique_destinations']}", "Landmarks represented", "#0d9488", "📍")
 with col3:
-    render_kpi_card("Destinations", f"{kpis['unique_destinations']}", "Iconic landmarks", border_color="#6366f1", icon="📍")
+    render_kpi_card("Average Rating", f"⭐ {kpis['avg_rating']}", "Out of 5", "#f59e0b", "🌟")
 with col4:
-    render_kpi_card("Avg Rating", f"⭐ {kpis['avg_rating']}", "Out of 5.0 scale", border_color="#f59e0b", icon="🌟")
-with col5:
-    render_kpi_card("Avg Est. Cost", f"₹{int(kpis['avg_cost']):,}", "Per tourist expense", border_color="#10b981", icon="💰")
-with col6:
-    render_kpi_card("Avg Stay", f"{kpis['avg_stay']} Days", "Duration per trip", border_color="#ec4899", icon="⏱️")
-with col7:
-    render_kpi_card("Recommended", f"{kpis['recommendation_pct']}%", "Positive advocacy", border_color="#14b8a6", icon="👍")
+    render_kpi_card("Advocacy Rate", f"{kpis['recommendation_pct']}%", "Recommend: Yes", "#14b8a6", "👍")
 
-st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+state_counts = filtered_df['State'].value_counts()
+top_state = state_counts.index[0]
+top_state_count = int(state_counts.iloc[0])
+top_place_scores = filtered_df.groupby('Place')['Popularity_Score'].mean().sort_values(ascending=False)
+top_place = top_place_scores.index[0]
+top_place_score = float(top_place_scores.iloc[0])
+top_category_counts = filtered_df['Category'].value_counts()
+top_category = top_category_counts.index[0]
+top_category_share = float(top_category_counts.iloc[0] / len(filtered_df) * 100)
 
-# -------------------------------------------------------------
-# AUTOMATED TOURISM INSIGHTS
-# -------------------------------------------------------------
-st.markdown("""
-<div style="margin: 16px 0 10px 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px;">
-    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
-        💡 Automated Tourism Business Insights
-        <span style="font-size: 11px; font-weight: 600; color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 9999px;">
-            Calculated Dynamically via Python
-        </span>
-    </h3>
-</div>
-""", unsafe_allow_html=True)
+st.markdown("#### What stands out in this selection")
+st.info(
+    f"**{top_state}** has the most visitor records ({top_state_count:,}; "
+    f"{top_state_count / len(filtered_df) * 100:.1f}% of this sample). "
+    f"**{top_place}** has the highest average popularity score ({top_place_score:.1f}/100), "
+    f"while **{top_category}** is the largest category ({top_category_share:.1f}%). "
+    "These are descriptive patterns in the selected records."
+)
+st.caption(
+    f"Also in this selection: {kpis['total_states']} states/UTs · "
+    f"₹{int(kpis['avg_cost']):,} average estimated cost · {kpis['avg_stay']} average stay days."
+)
 
-insights = generate_automated_insights(filtered_df)
-if insights:
-    # Render insights in 5 columns x 2 rows
-    row1 = insights[:5]
-    row2 = insights[5:]
-
-    cols_r1 = st.columns(5)
-    for idx, ins in enumerate(row1):
-        with cols_r1[idx]:
-            st.markdown(f"""
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 12px; height: 160px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); border-top: 3px solid {ins['color']};">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                    <span style="font-size: 11px; font-weight: 700; color: {ins['color']}; text-transform: uppercase;">{ins['badge']}</span>
-                    <span>{ins['icon']}</span>
-                </div>
-                <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">{ins['title']}</div>
-                <div style="font-size: 15px; font-weight: 800; color: #0284c7; margin-bottom: 6px;">{ins['value']}</div>
-                <div style="font-size: 11px; color: #64748b; line-height: 1.4;">{ins['detail']}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-    cols_r2 = st.columns(5)
-    for idx, ins in enumerate(row2):
-        with cols_r2[idx]:
-            st.markdown(f"""
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 12px; height: 160px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); border-top: 3px solid {ins['color']};">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                    <span style="font-size: 11px; font-weight: 700; color: {ins['color']}; text-transform: uppercase;">{ins['badge']}</span>
-                    <span>{ins['icon']}</span>
-                </div>
-                <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">{ins['title']}</div>
-                <div style="font-size: 15px; font-weight: 800; color: #0284c7; margin-bottom: 6px;">{ins['value']}</div>
-                <div style="font-size: 11px; color: #64748b; line-height: 1.4;">{ins['detail']}</div>
-            </div>
-            """, unsafe_allow_html=True)
+st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# QUICK INTERACTIVE VISUALIZATION PREVIEW
+# CORE ANALYTICAL DASHBOARD TABS
 # -------------------------------------------------------------
-st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
-col_left, col_mid, col_right = st.columns([1.4, 1, 1.2])
-
-with col_left:
-    st.plotly_chart(plot_state_distribution(filtered_df, top_n=8), use_container_width=True)
-
-with col_mid:
-    st.plotly_chart(plot_category_distribution(filtered_df), use_container_width=True)
-
-with col_right:
-    st.plotly_chart(plot_monthly_trend(filtered_df), use_container_width=True)
+tab_overview, tab_geo, tab_eda, tab_demo, tab_insights = st.tabs([
+    "📊 Executive Overview",
+    "🗺️ Spatial GIS Map",
+    "🔬 Statistical EDA & Correlation",
+    "👥 Demographics & Cohorts",
+    "💡 Algorithmic Insights & Audit"
+])
 
 # -------------------------------------------------------------
-# DVP LABORATORY & DATA CLEANING AUDIT SUMMARY
+# TAB 1: EXECUTIVE OVERVIEW CHARTS
 # -------------------------------------------------------------
-with st.expander("🔬 DVP Laboratory Data Cleaning Pipeline & Preprocessing Audit", expanded=False):
-    audit = st.session_state.get('audit', {})
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Raw Rows Processed", audit.get('initial_rows', 1000))
-    c2.metric("Clean Columns Cast", audit.get('final_cols', 25))
-    c3.metric("Record #1 Munnar Clean", "Active" if audit.get('first_record_corrected') else "Raw")
-    c4.metric("Duplicates Identified", audit.get('duplicates_removed', 0))
+with tab_overview:
+    st.markdown("#### Compare destinations and visitor segments")
+    control_dimension, control_metric = st.columns([1, 1.4])
+    with control_dimension:
+        selected_dimension = st.selectbox(
+            "Break down by",
+            ["Destination", "State", "Category", "Season", "Travel group", "Age group"],
+        )
+    with control_metric:
+        selected_metric = st.selectbox(
+            "Measure",
+            [
+                "Visitor records",
+                "Estimated footfall",
+                "Average rating",
+                "Average estimated cost (INR)",
+                "Average stay (days)",
+                "Average popularity score",
+            ],
+        )
+    st.plotly_chart(
+        plot_segment_metric(filtered_df, selected_dimension, selected_metric),
+        use_container_width=True,
+    )
+    st.caption("Counts describe records in this sample; averages and footfall use the selected dataset fields.")
 
+    r2_c1, r2_c2 = st.columns([1.2, 1])
+    with r2_c1:
+        st.plotly_chart(plot_destination_sunburst(filtered_df), use_container_width=True)
+    with r2_c2:
+        st.plotly_chart(plot_monthly_trend(filtered_df), use_container_width=True)
+
+    r3_c1, r3_c2 = st.columns(2)
+    with r3_c1:
+        st.plotly_chart(plot_seasonal_distribution(filtered_df), use_container_width=True)
+    with r3_c2:
+        st.plotly_chart(plot_recommendation_pie(filtered_df), use_container_width=True)
+
+# -------------------------------------------------------------
+# TAB 2: SPATIAL GIS MAPPING
+# -------------------------------------------------------------
+with tab_geo:
     st.markdown("""
-    **Preprocessing Applied for Laboratory Demonstration:**
-    1. **First Record Correction (Python Logic):** Visitor V0001 (Munnar, Kerala) repaired with verified attributes.
-    2. **Type Casting:** Numerical features converted from text strings into proper `float64` and `int64`.
-    3. **Missing Value Imputation:** Numerical missing values imputed using feature **median**; categorical missing values imputed using feature **mode**.
-    4. **Geographical Coordinates:** Exact latitude and longitude coordinates attached for the 20 Indian destinations for mapping.
-    """)
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; margin-bottom: 12px;">
+        <span style="font-weight: 700; color: #0f172a;">📍 Pan-India Geospatial Destination Mapping</span>
+        <span style="font-size: 12px; color: #64748b; margin-left: 10px;">Interactive Folium GIS Layer with category color badges and clustered coordinates</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    map_mode = st.radio(
+        "Map layer",
+        ["Destination clusters", "Estimated footfall heatmap"],
+        horizontal=True,
+        key="overview_map_mode",
+    )
+    map_obj = (
+        create_india_folium_map(filtered_df)
+        if map_mode == "Destination clusters"
+        else create_india_footfall_heatmap(filtered_df)
+    )
+    st_folium(map_obj, width=None, height=480)
+    if map_mode == "Estimated footfall heatmap":
+        st.caption("Heat intensity is weighted by estimated visitor counts at destination coordinates; smoothing is a visual aid, not measured density between sites.")
+
+    g_c1, g_c2 = st.columns(2)
+    with g_c1:
+        st.plotly_chart(plot_category_by_state(filtered_df), use_container_width=True)
+    with g_c2:
+        st.plotly_chart(plot_location_type_distribution(filtered_df), use_container_width=True)
 
 # -------------------------------------------------------------
-# NAVIGATION PORTAL CARDS
+# TAB 3: STATISTICAL EDA & CORRELATION MATRIX
 # -------------------------------------------------------------
-st.markdown("""
-<div style="margin: 20px 0 10px 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px;">
-    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #0f172a;">
-        📊 Analytics Module Navigation
-    </h3>
-</div>
-""", unsafe_allow_html=True)
+with tab_eda:
+    st.markdown("""
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; margin-bottom: 12px;">
+        <span style="font-weight: 700; color: #0f172a;">🔬 Statistical EDA, Multi-Variate Correlation & Benchmark Radars</span>
+        <span style="font-size: 12px; color: #64748b; margin-left: 10px;">Pearson correlations, bivariate scatter models, and quality benchmarking</span>
+    </div>
+    """, unsafe_allow_html=True)
 
-nav_cols = st.columns(4)
-pages = [
-    ("1. Executive Overview", "pages/1_Executive_Overview.py", "Complete high-level KPI indicators and interactive distribution charts.", "📈"),
-    ("2. Geographical Analysis", "pages/2_Geographical_Analysis.py", "Interactive Folium India map, regional breakdowns, and state rankings.", "🗺️"),
-    ("3. Tourist Demographics", "pages/3_Tourist_Demographics.py", "Age cohorts, gender split, travel group preferences, and heatmaps.", "👥"),
-    ("4. Tourism Performance", "pages/4_Tourism_Performance.py", "Destination ratings, popularity scores, cleanliness, and safety rankings.", "⭐"),
-    ("5. Financial Analysis", "pages/5_Financial_Analysis.py", "Budget analysis, travel expense modeling, and interactive budget simulator.", "💰"),
-    ("6. Review Analytics", "pages/6_Review_Analytics.py", "Text mining, review word clouds, and tourist satisfaction search engine.", "💬"),
-    ("7. Exploratory Data Analysis", "pages/7_Exploratory_Data_Analysis.py", "Statistical EDA, outlier detection via IQR, and correlation matrix.", "🔬"),
-    ("8. Data Explorer & Power BI", "pages/8_Data_Explorer.py", "Complete searchable dataset, Power BI exports, and Excel workbook downloads.", "📥"),
-    ("9. Smart AI Recommender & 3D", "pages/9_AI_Recommender_&_Battle.py", "MCDA algorithmic trip matcher, head-to-head battle, and 3D visual space.", "✨")
-]
+    eda_r1_c1, eda_r1_c2 = st.columns(2)
+    with eda_r1_c1:
+        corr_fig = plot_correlation_matrix(filtered_df)
+        st.pyplot(corr_fig, use_container_width=True)
+    with eda_r1_c2:
+        st.plotly_chart(plot_quality_radar(filtered_df), use_container_width=True)
 
-for idx, (title, page_file, desc, icon) in enumerate(pages):
-    with nav_cols[idx % 4]:
-        st.markdown(f"""
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 12px; height: 130px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-            <div style="font-size: 18px; margin-bottom: 4px;">{icon}</div>
-            <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">{title}</div>
-            <div style="font-size: 11.5px; color: #64748b; line-height: 1.4;">{desc}</div>
-        </div>
-        """, unsafe_allow_html=True)
+    eda_r2_c1, eda_r2_c2 = st.columns(2)
+    with eda_r2_c1:
+        st.plotly_chart(plot_cost_vs_stay(filtered_df), use_container_width=True)
+    with eda_r2_c2:
+        st.plotly_chart(plot_rating_vs_popularity_scatter(filtered_df), use_container_width=True)
 
-# Footer
-st.markdown("""
-<div style="margin-top: 30px; padding: 16px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
-    <b>INDIA TOURISM ANALYTICS AND BUSINESS INTELLIGENCE DASHBOARD</b> • College DVP Laboratory Project<br>
-    Built with Python, Streamlit, Pandas, NumPy, Matplotlib, Seaborn, Plotly, Folium & OpenPyXL.
-</div>
-""", unsafe_allow_html=True)
+# -------------------------------------------------------------
+# TAB 4: DEMOGRAPHICS & COHORT ANALYSIS
+# -------------------------------------------------------------
+with tab_demo:
+    demo_r1_c1, demo_r1_c2 = st.columns(2)
+    with demo_r1_c1:
+        heat_fig = plot_age_vs_travel_heatmap(filtered_df)
+        st.plotly_chart(heat_fig, use_container_width=True)
+    with demo_r1_c2:
+        st.plotly_chart(plot_age_distribution(filtered_df), use_container_width=True)
 
+    demo_r2_c1, demo_r2_c2 = st.columns(2)
+    with demo_r2_c1:
+        st.plotly_chart(plot_travel_group_distribution(filtered_df), use_container_width=True)
+    with demo_r2_c2:
+        st.plotly_chart(plot_gender_distribution(filtered_df), use_container_width=True)
+
+# -------------------------------------------------------------
+# TAB 5: ALGORITHMIC INSIGHTS & CLEANING AUDIT
+# -------------------------------------------------------------
+with tab_insights:
+    insights = generate_automated_insights(filtered_df)
+    if insights:
+        cols_ins = st.columns(5)
+        for idx, ins in enumerate(insights[:5]):
+            with cols_ins[idx]:
+                st.markdown(f"""
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 12px; height: 155px; border-top: 3px solid {ins['color']};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-size: 10px; font-weight: 700; color: {ins['color']}; text-transform: uppercase;">{ins['badge']}</span>
+                        <span>{ins['icon']}</span>
+                    </div>
+                    <div style="font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 3px;">{ins['title']}</div>
+                    <div style="font-size: 14px; font-weight: 800; color: #0284c7; margin-bottom: 4px;">{ins['value']}</div>
+                    <div style="font-size: 11px; color: #64748b; line-height: 1.35;">{ins['detail']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+    st.markdown("#### 🔬 DVP Preprocessing & Data Cleaning Audit")
+    audit = st.session_state.get('audit', {})
+    a1, a2, a3, a4 = st.columns(4)
+    a1.metric("Raw Records Loaded", audit.get('initial_rows', 1000))
+    a2.metric("Features Cleaned", audit.get('final_cols', 25))
+    a3.metric("Record #1 (Munnar)", "Corrected" if audit.get('first_record_corrected') else "Raw")
+    a4.metric("Duplicates Handled", audit.get('duplicates_removed', 0))
