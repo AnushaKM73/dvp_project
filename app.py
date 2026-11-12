@@ -19,6 +19,8 @@ from utils.visualizations import (
     plot_monthly_trend,
     plot_segment_metric,
     plot_destination_sunburst,
+    plot_visitor_pattern_sankey,
+    plot_destination_cost_rating,
     plot_seasonal_distribution,
     plot_recommendation_pie,
     create_india_folium_map,
@@ -134,11 +136,12 @@ st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 # -------------------------------------------------------------
 # CORE ANALYTICAL DASHBOARD TABS
 # -------------------------------------------------------------
-tab_overview, tab_geo, tab_eda, tab_demo, tab_insights = st.tabs([
+tab_overview, tab_geo, tab_eda, tab_demo, tab_patterns, tab_insights = st.tabs([
     "📊 Executive Overview",
     "🗺️ Spatial GIS Map",
     "🔬 Statistical EDA & Correlation",
     "👥 Demographics & Cohorts",
+    "🧭 Visitor Patterns Lab",
     "💡 Algorithmic Insights & Audit"
 ])
 
@@ -257,7 +260,26 @@ with tab_demo:
         st.plotly_chart(plot_gender_distribution(filtered_df), use_container_width=True)
 
 # -------------------------------------------------------------
-# TAB 5: ALGORITHMIC INSIGHTS & CLEANING AUDIT
+# TAB 5: VISITOR PATTERNS & DESTINATION VALUE
+# -------------------------------------------------------------
+with tab_patterns:
+    st.markdown("### Follow visitor segments through the sample")
+    st.caption(
+        "Each link shows how many records share two adjacent attributes. "
+        "Budget tiers are recalculated as sample-relative quartile groups (smaller selections show fewer tiers); "
+        "the flow is descriptive and does not imply a causal or chronological journey."
+    )
+    st.plotly_chart(plot_visitor_pattern_sankey(filtered_df), use_container_width=True)
+
+    st.markdown("### Compare destination cost and experience")
+    st.caption(
+        "Each point is a destination. Bubble size shows its record count in this sample; "
+        "dashed lines mark the median destination cost and rating. Hover for details."
+    )
+    st.plotly_chart(plot_destination_cost_rating(filtered_df), use_container_width=True)
+
+# -------------------------------------------------------------
+# TAB 6: ALGORITHMIC INSIGHTS & CLEANING AUDIT
 # -------------------------------------------------------------
 with tab_insights:
     insights = generate_automated_insights(filtered_df)

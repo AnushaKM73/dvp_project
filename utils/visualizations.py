@@ -202,6 +202,132 @@ def plot_destination_sunburst(df):
     return apply_pbi_theme(fig)
 
 
+def plot_visitor_pattern_sankey(df):
+    """Trace sample records across travel group, category, budget tier, and recommendation."""
+    flow = df[["Travel_Group", "Category", "Estimated_Cost_INR", "Recommended"]].dropna().copy()
+    if flow.empty:
+        return go.Figure().update_layout(title="No records available for this visitor pattern")
+
+    tier_names_by_count = {
+        1: ["Only budget level"],
+        2: ["Lower cost", "Higher cost"],
+        3: ["Lower cost", "Mid-range cost", "Higher cost"],
+        4: ["Lower cost", "Mid-low cost", "Mid-high cost", "Higher cost"],
+    }
+    tier_count = min(4, len(flow))
+    tier_names = tier_names_by_count[tier_count]
+    if tier_count == 1:
+        flow["Budget tier"] = tier_names[0]
+    else:
+        cost_rank = flow["Estimated_Cost_INR"].rank(method="first")
+        tier_codes = pd.qcut(cost_rank, q=tier_count, labels=False)
+        flow["Budget tier"] = tier_codes.map(dict(enumerate(tier_names))).astype(str)
+
+    stages = ["Travel_Group", "Category", "Budget tier", "Recommended"]
+    stage_labels = []
+    stage_lookup = []
+    stage_colors = ["#0284c7", "#0d9488", "#f97316", "#6366f1"]
+
+    for stage_index, column in enumerate(stages):
+        values = flow[column].dropna().astype(str).unique().tolist()
+        if column == "Budget tier":
+            values = tier_names
+        elif column == "Recommended":
+            values = [value for value in ["Yes", "No"] if value in values]
+        else:
+            values = sorted(values, key=str.casefold)
+        stage_lookup.append({value: len(stage_labels) + index for index, value in enumerate(values)})
+        stage_labels.extend(values)
+
+    sources, targets, values, link_colors = [], [], [], []
+    for stage_index in range(len(stages) - 1):
+        left, right = stages[stage_index], stages[stage_index + 1]
+        links = (
+            flow.groupby([left, right], observed=True)
+            .size()
+            .reset_index(name="Records")
+        )
+        for row in links.itertuples(index=False, name=None):
+            source_label, target_label, record_count = str(row[0]), str(row[1]), int(row[2])
+            sources.append(stage_lookup[stage_index][source_label])
+            targets.append(stage_lookup[stage_index + 1][target_label])
+            values.append(record_count)
+            red, green, blue = tuple(
+                int(stage_colors[stage_index].lstrip("#")[offset:offset + 2], 16)
+                for offset in (0, 2, 4)
+            )
+            link_colors.append(f"rgba({red},{green},{blue},0.25)")
+
+    fig = go.Figure(go.Sankey(
+        arrangement="snap",
+        node=dict(
+            pad=18,
+            thickness=17,
+            line=dict(color="white", width=1),
+            label=stage_labels,
+            color=[stage_colors[index] for index, column in enumerate(stages)
+                   for _ in stage_lookup[index]],
+            hovertemplate="%{label}<extra></extra>",
+        ),
+        link=dict(
+            source=sources,
+            target=targets,
+            value=values,
+            color=link_colors,
+            hovertemplate="%{source.label} → %{target.label}<br>%{value:,} records<extra></extra>",
+        ),
+    ))
+    fig.update_layout(
+        title="Visitor profile flow across the selected records",
+        height=520,
+        margin=dict(l=12, r=12, t=58, b=12),
+    )
+    return apply_pbi_theme(fig)
+
+
+def plot_destination_cost_rating(df):
+    """Compare destination-level estimated trip cost and satisfaction in one view."""
+    summary = (
+        df.groupby(["Place", "State", "Category"], dropna=True)
+        .agg(
+            Average_Cost=("Estimated_Cost_INR", "mean"),
+            Average_Rating=("Rating", "mean"),
+            Visitor_Records=("Visitor_ID", "count"),
+            Average_Popularity=("Popularity_Score", "mean"),
+        )
+        .reset_index()
+    )
+    fig = px.scatter(
+        summary,
+        x="Average_Cost",
+        y="Average_Rating",
+        size="Visitor_Records",
+        color="Category",
+        hover_name="Place",
+        hover_data={
+            "State": True,
+            "Average_Cost": ":,.0f",
+            "Average_Rating": ":.2f",
+            "Visitor_Records": ":,",
+            "Average_Popularity": ":.1f",
+        },
+        size_max=28,
+        color_discrete_sequence=PBI_PALETTE,
+        title="Destination cost and visitor rating",
+        labels={
+            "Average_Cost": "Average estimated trip cost (INR)",
+            "Average_Rating": "Average rating (out of 5)",
+            "Visitor_Records": "Records in sample",
+            "Category": "Tourism category",
+        },
+    )
+    fig.add_vline(x=summary["Average_Cost"].median(), line_dash="dash", line_color="#64748b")
+    fig.add_hline(y=summary["Average_Rating"].median(), line_dash="dash", line_color="#64748b")
+    fig.update_yaxes(range=[1, 5], dtick=0.5)
+    fig.update_layout(legend_title_text="Tourism category")
+    return apply_pbi_theme(fig)
+
+
 def plot_seasonal_distribution(df):
     """Bar chart: Seasonal tourism distribution."""
     season_order = ["Winter", "Summer", "Monsoon", "Spring", "Autumn"]

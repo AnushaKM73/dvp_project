@@ -142,6 +142,7 @@ The application generates Star-Schema compatible tables in `exports/` and a cons
 * **Live Segment & Metric Explorer:** Compare visitor records, estimated footfall, ratings, trip cost, stay length, and popularity by destination, state, category, season, travel group, or age group.
 * **Destination Sunburst:** Drill from state to tourism category to destination, sized by estimated footfall and colored by average rating.
 * **Interactive India GIS Mapping:** Switch between destination clusters and a smoothed heat layer weighted by estimated visitor counts at mapped destination coordinates.
+* **Visitor Patterns Lab:** Sankey links travel group, tourism category, sample-relative budget quartile, and recommendation; a companion bubble plot compares destination cost, rating, and sample size.
 * **Review Text Analysis:** Stopword-filtered word cloud and VADER sentiment, with an explicitly labeled keyword fallback when the package is unavailable.
 * **Rigorous Statistical EDA:** Parametric distributions, skewness analysis, IQR outlier fences, and correlation heatmaps with Seaborn.
 
