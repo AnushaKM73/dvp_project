@@ -1,0 +1,44 @@
+// ==============================================================================
+// INDIA TOURISM ANALYTICS - POWER BI DAX MEASURES
+// Course: Data Visualization with Python (DVP) Laboratory Project
+// Star-Schema Model: Fact Table 'Cleaned_Data'
+// ==============================================================================
+
+// 1. Total Tourist Volume
+Total Tourists = COUNTROWS('Cleaned_Data')
+
+// 2. Average Tourist Satisfaction (0-5)
+Average Rating = AVERAGE('Cleaned_Data'[Rating])
+
+// 3. Average Estimated Travel Cost (INR)
+Average Travel Cost = AVERAGE('Cleaned_Data'[Estimated_Cost_INR])
+
+// 4. Total Footfall Volume (Visitors Sum)
+Total Visitors Count = SUM('Cleaned_Data'[Visitors_Count])
+
+// 5. Overall Traveler Advocacy / Recommendation Percentage
+Recommendation Rate = 
+DIVIDE(
+    CALCULATE(COUNTROWS('Cleaned_Data'), 'Cleaned_Data'[Recommended] = "Yes"),
+    COUNTROWS('Cleaned_Data'),
+    0
+) * 100
+
+// 6. Average Stay Duration (Days)
+Average Stay Days = AVERAGE('Cleaned_Data'[Stay_Days])
+
+// 7. Karnataka Market Share % (Leading State)
+Karnataka Volume Share = 
+DIVIDE(
+    CALCULATE(COUNTROWS('Cleaned_Data'), 'Cleaned_Data'[State] = "Karnataka"),
+    COUNTROWS('Cleaned_Data'),
+    0
+) * 100
+
+// 8. Quality Index Composite (Cleanliness + Safety + Accessibility)
+Composite Quality Score = 
+AVERAGEX(
+    'Cleaned_Data',
+    ('Cleaned_Data'[Cleanliness_Rating] + 'Cleaned_Data'[Safety_Rating] + 'Cleaned_Data'[Accessibility_Rating]) / 3
+)
+
