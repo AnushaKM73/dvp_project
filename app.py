@@ -5,7 +5,17 @@ Academic Project for Data Visualization with Python (DVP) Laboratory
 
 import streamlit as st
 import pandas as pd
+import importlib
 from streamlit_folium import st_folium
+import utils.visualizations as visualization_module
+
+# Streamlit can rerun app.py with a previously imported helper module still cached.
+# Reload it when the main dashboard's newer chart helpers are missing.
+if not all(hasattr(visualization_module, name) for name in (
+    "plot_visitor_pattern_sankey",
+    "plot_destination_cost_rating",
+)):
+    importlib.reload(visualization_module)
 
 from utils.ui_components import (
     apply_theme,
