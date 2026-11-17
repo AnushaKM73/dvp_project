@@ -103,6 +103,34 @@ def compute_smart_recommendations(df, theme="Any Theme", party="Couple", budget=
             season_score * 0.10
         )
 
+        # Keep the score auditable: show the evidence and the number of
+        # visitor records behind destination level and preference-specific stats.
+        if theme in ("Any Theme", "Any"):
+            theme_reason = "No theme preference selected"
+        elif theme_score == 100.0:
+            theme_reason = f"Matches your {theme.lower()} theme"
+        else:
+            theme_reason = f"Different theme from your {theme.lower()} preference"
+
+        if cost <= budget:
+            budget_reason = "Average cost is within your budget"
+        else:
+            budget_reason = f"Average cost is ₹{int(round(cost - budget)):,} above your budget"
+
+        if not cohort_records.empty:
+            cohort_reason = f"{party} visitor rating: {cohort_rating:.1f}/5 ({len(cohort_records)} records)"
+        else:
+            cohort_reason = f"No {party.lower()}-specific records; overall rating used as a fallback"
+
+        if season in ("All Seasons", "All"):
+            season_reason = "No season preference selected"
+        elif not season_records.empty:
+            season_reason = f"{len(season_records)} visitor records in {season}"
+        else:
+            season_reason = f"No {season} visits found in this dataset"
+
+        reasons = [theme_reason, budget_reason, cohort_reason, season_reason]
+
         recommendations.append({
             "Place": place,
             "State": row['State'],
@@ -114,7 +142,16 @@ def compute_smart_recommendations(df, theme="Any Theme", party="Couple", budget=
             "Popularity": round(float(row['Popularity']), 1),
             "Cleanliness": round(float(row['Cleanliness']), 2),
             "Safety": round(float(row['Safety']), 2),
-            "Match_Score": int(round(total_score))
+            "Match_Score": int(round(total_score)),
+            "Records": int(row['Records']),
+            "Reasons": reasons,
+            "Score_Breakdown": {
+                "theme": round(float(theme_score), 1),
+                "budget": round(float(budget_score), 1),
+                "rating": round(float(quality_score), 1),
+                "travel_group": round(float(cohort_score), 1),
+                "season": round(float(season_score), 1)
+            }
         })
 
     recommendations.sort(key=lambda x: x['Match_Score'], reverse=True)

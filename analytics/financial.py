@@ -123,6 +123,7 @@ def get_financial_charts(df):
         x='Stay_Days',
         y='Estimated_Cost_INR',
         color='Category',
+        custom_data=['Place'],
         hover_data=['Place', 'State', 'Rating'],
         color_discrete_sequence=PBI_PALETTE,
         title="Estimated Travel Cost vs. Stay Duration (Days)"

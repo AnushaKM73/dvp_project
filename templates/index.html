@@ -188,6 +188,11 @@
                     </button>
                 </div>
             </section>
+            <div class="chart-interaction-bar" role="status" aria-live="polite">
+                <span><i class="fa-solid fa-hand-pointer"></i> Click a bar, slice, map marker, or point to filter visitor data across tabs. Click it again or clear the selection to reset.</span>
+                <span id="chart-filter-summary" class="chart-filter-summary"></span>
+                <button class="btn btn-secondary btn-sm" id="btn-clear-chart-filters" type="button" hidden>Clear chart selection</button>
+            </div>
 
             <!-- ======================================================== -->
             <!-- 1. EXECUTIVE OVERVIEW SECTION -->
@@ -261,7 +266,7 @@
                 </div>
 
                 <!-- SEGMENT EXPLORER -->
-                <div class="card mb-4">
+                <div class="card mb-4 overview-feature-panel">
                     <div class="card-header flex-between">
                         <div>
                             <h4>Compare Destinations and Visitor Segments</h4>
@@ -297,42 +302,39 @@
                     </div>
                 </div>
 
-                <!-- ROW 1: STATE VOLUME & TOP DESTINATIONS -->
-                <div class="grid grid-2 mb-4">
-                    <div class="card">
+                <div class="story-section-heading">
+                    <span>DEMAND PATTERNS</span>
+                    <h3>Where visitors go, and when they travel</h3>
+                    <p>Read these views as a connected story: concentration by state, destination demand, category mix, then seasonal and monthly patterns.</p>
+                </div>
+
+                <div class="overview-chart-mosaic mb-4">
+                    <div class="card overview-chart-panel overview-state-panel">
                         <div class="card-body">
                             <div id="chart-state-volume" class="chart-container" style="height: 380px;"></div>
                         </div>
                     </div>
-                    <div class="card">
+                    <div class="card overview-chart-panel overview-destination-panel">
                         <div class="card-body">
                             <div id="chart-top-destinations" class="chart-container" style="height: 380px;"></div>
                         </div>
                     </div>
-                </div>
-
-                <!-- ROW 2: CATEGORY DONUT & MONTHLY TREND -->
-                <div class="grid grid-2 mb-4">
-                    <div class="card">
+                    <div class="card overview-chart-panel overview-category-panel">
                         <div class="card-body">
                             <div id="chart-category-donut" class="chart-container" style="height: 360px;"></div>
                         </div>
                     </div>
-                    <div class="card">
+                    <div class="card overview-chart-panel overview-monthly-panel">
                         <div class="card-body">
                             <div id="chart-monthly-trend" class="chart-container" style="height: 360px;"></div>
                         </div>
                     </div>
-                </div>
-
-                <!-- ROW 3: SEASONAL & RECOMMENDATION -->
-                <div class="grid grid-2 mb-4">
-                    <div class="card">
+                    <div class="card overview-chart-panel overview-season-panel">
                         <div class="card-body">
                             <div id="chart-seasonal-distribution" class="chart-container" style="height: 350px;"></div>
                         </div>
                     </div>
-                    <div class="card">
+                    <div class="card overview-chart-panel overview-recommendation-panel">
                         <div class="card-body">
                             <div id="chart-recommendation-pie" class="chart-container" style="height: 350px;"></div>
                         </div>
@@ -399,23 +401,27 @@
                     </div>
                 </div>
 
-                <!-- GEOGRAPHICAL CHARTS -->
-                <div class="grid grid-2 mb-4">
-                    <div class="card">
+                <div class="story-section-heading geo-story-heading">
+                    <span>REGIONAL COMPARISON</span>
+                    <h3>Compare the visitor footprint across regions</h3>
+                    <p>Use the map to locate the sample, then compare record volume, category mix, and destination setting below.</p>
+                </div>
+
+                <div class="geo-analysis-mosaic mb-4">
+                    <div class="card geo-state-panel">
                         <div class="card-body">
                             <div id="chart-geo-top-states" class="chart-container" style="height: 380px;"></div>
                         </div>
                     </div>
-                    <div class="card">
+                    <div class="card geo-category-panel">
                         <div class="card-body">
                             <div id="chart-geo-cat-state" class="chart-container" style="height: 380px;"></div>
                         </div>
                     </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <div id="chart-geo-location-types" class="chart-container" style="height: 340px;"></div>
+                    <div class="card geo-setting-panel">
+                        <div class="card-body">
+                            <div id="chart-geo-location-types" class="chart-container" style="height: 340px;"></div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -459,26 +465,29 @@
                     </div>
                 </div>
 
-                <div class="grid grid-2 mb-4">
-                    <div class="card">
+                <div class="story-section-heading audience-story-heading">
+                    <span>TRAVELER PROFILES</span>
+                    <h3>Who travels, and which groups travel together?</h3>
+                    <p>Compare age and gender patterns, then read the age-by-travel-group matrix to spot the combinations with the most records.</p>
+                </div>
+
+                <div class="demographic-mosaic mb-4">
+                    <div class="card demographic-age-panel">
                         <div class="card-body">
                             <div id="chart-demo-age" class="chart-container" style="height: 360px;"></div>
                         </div>
                     </div>
-                    <div class="card">
+                    <div class="card demographic-gender-panel">
                         <div class="card-body">
                             <div id="chart-demo-gender" class="chart-container" style="height: 360px;"></div>
                         </div>
                     </div>
-                </div>
-
-                <div class="grid grid-2 mb-4">
-                    <div class="card">
+                    <div class="card demographic-group-panel">
                         <div class="card-body">
                             <div id="chart-demo-group" class="chart-container" style="height: 360px;"></div>
                         </div>
                     </div>
-                    <div class="card">
+                    <div class="card demographic-heatmap-panel">
                         <div class="card-body">
                             <div id="chart-demo-heatmap" class="chart-container" style="height: 360px;"></div>
                         </div>
@@ -525,13 +534,19 @@
                     </div>
                 </div>
 
-                <div class="grid grid-2 mb-4">
-                    <div class="card">
+                <div class="story-section-heading performance-story-heading">
+                    <span>DESTINATION SCORECARD</span>
+                    <h3>Balance visitor satisfaction with destination demand</h3>
+                    <p>Use the bubble view to find destinations that combine strong ratings and popularity; the scorecard below gives the detailed quality measures.</p>
+                </div>
+
+                <div class="performance-visual-mosaic mb-4">
+                    <div class="card performance-scatter-panel">
                         <div class="card-body">
                             <div id="chart-perf-scatter" class="chart-container" style="height: 400px;"></div>
                         </div>
                     </div>
-                    <div class="card">
+                    <div class="card performance-radar-panel">
                         <div class="card-body">
                             <div id="chart-perf-radar" class="chart-container" style="height: 400px;"></div>
                         </div>
@@ -605,6 +620,12 @@
                             <span class="kpi-subtitle" id="fin-kpi-daily-burn-sub">Based on 3.9 days avg stay</span>
                         </div>
                     </div>
+                </div>
+
+                <div class="story-section-heading financial-story-heading">
+                    <span>SPENDING PATTERNS</span>
+                    <h3>See how trip cost changes across the sample</h3>
+                    <p>The planners above help make a decision; these views show how observed costs vary by category, state, and trip length.</p>
                 </div>
 
                 <div class="grid grid-2 mb-4">
@@ -804,7 +825,13 @@
                     </div>
                 </div>
 
-                <div class="grid grid-2 mb-4">
+                <div class="story-section-heading review-story-heading">
+                    <span>VOICE OF THE VISITOR</span>
+                    <h3>Search the comments, then compare the sentiment patterns</h3>
+                    <p>Use the review explorer first to read the original visitor text. Summary charts below help spot repeated themes in the same filtered sample.</p>
+                </div>
+
+                <div class="review-visual-mosaic mb-4">
                     <div class="card">
                         <div class="card-body">
                             <div id="chart-rev-words" class="chart-container" style="height: 380px;"></div>
@@ -817,14 +844,14 @@
                     </div>
                 </div>
 
-                <div class="card mb-4">
+                <div class="card mb-4 review-destination-panel">
                     <div class="card-body">
                         <div id="chart-rev-top-dest" class="chart-container" style="height: 350px;"></div>
                     </div>
                 </div>
 
                 <!-- INTERACTIVE REVIEW EXPLORER -->
-                <div class="interactive-panel mb-4" style="border-top: 4px solid #0284c7;">
+                <div class="interactive-panel review-explorer-panel mb-4" style="border-top: 4px solid #0284c7;">
                     <div class="panel-header">
                         <h3><i class="fa-solid fa-magnifying-glass"></i> Interactive Tourist Review Explorer</h3>
                         <p>Filter by destination or search specific visitor keywords (e.g. 'pleasant', 'crowded', 'photography', 'clean').</p>
@@ -890,7 +917,8 @@
                     <div class="interactive-panel mb-4" style="border-top: 4px solid #0284c7;">
                         <div class="panel-header">
                             <h3>🎯 Algorithmic Multi-Criteria Destination Recommender</h3>
-                            <p>Customize your travel preferences to compute algorithmic match scores across all 20 Indian destinations based on category affinity, budget viability, and historical cohort satisfaction.</p>
+                            <p>Choose a theme, travel group, budget, and season. Each destination is ranked using visitor records and your preferences.</p>
+                            <div class="mcda-method-note"><strong>How to read the score:</strong> Theme fit (30%) + budget fit (25%) + average rating (20%) + travel-group rating (15%) + season evidence (10%). It is a rule-based match score, not a probability or a guarantee. Sample counts show how many visitor records support each destination.</div>
                         </div>
                         <div class="mcda-form">
                             <div class="form-row">
@@ -950,6 +978,8 @@
                                         <th>Avg Cost (₹)</th>
                                         <th>Avg Stay</th>
                                         <th>Popularity</th>
+                                        <th>Visitor Records</th>
+                                        <th>Why it matched</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1037,6 +1067,7 @@
                         <div>
                             <h4 id="hierarchical-map-title">🗺️ India Interactive Tourism Explorer</h4>
                             <p class="text-muted" id="hierarchical-map-desc">Click a state to explore its districts.</p>
+                            <p class="map-data-note">This map browses <strong id="map-destination-count">the destination directory</strong>. Dashboard ratings and recommendations summarize a separate sample of <strong id="map-visitor-count">visitor records</strong>. Open a destination card to see its source when available.</p>
                         </div>
                         <div class="map-nav-controls">
                             <button class="btn btn-secondary btn-sm" id="btn-back-to-india" style="display:none;">

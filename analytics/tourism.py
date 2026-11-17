@@ -297,6 +297,7 @@ def get_performance_charts(df):
         size='Visitors',
         color='Category',
         hover_name='Place',
+        custom_data=['Place'],
         hover_data={'State': True, 'Cost': ':.0f', 'Rating': ':.2f', 'Popularity': ':.1f', 'Visitors': True},
         color_discrete_sequence=PBI_PALETTE,
         title="Satisfaction Rating vs. Popularity Score Matrix (Bubble Size = Visitors)"

@@ -675,5 +675,27 @@ def apply_filters(df, filters=None):
     if max_budget is not None and max_budget > 0:
         filtered = filtered[filtered['Estimated_Cost_INR'] <= float(max_budget)]
 
+    # Optional chart-click filters used for coordinated dashboard exploration.
+    chart_filter_columns = {
+        'state': 'State',
+        'category': 'Category',
+        'season': 'Season',
+        'travel_group': 'Travel_Group',
+        'place': 'Place',
+        'month': 'Visit_Month',
+        'age_group': 'Age_Group',
+        'gender': 'Gender',
+        'recommended': 'Recommended',
+        'location_type': 'Location_Type'
+    }
+    for key, column in chart_filter_columns.items():
+        value = (filters.get('chart_filters') or {}).get(key)
+        if value is not None and column in filtered.columns:
+            filtered = filtered[filtered[column].astype(str) == str(value)]
+
+    review_keyword = (filters.get('chart_filters') or {}).get('review_keyword')
+    if review_keyword and 'Review' in filtered.columns:
+        filtered = filtered[filtered['Review'].fillna('').astype(str).str.contains(str(review_keyword), case=False, regex=False)]
+
     return filtered
 

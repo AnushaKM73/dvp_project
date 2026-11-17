@@ -77,8 +77,13 @@ const MapEngine = {
         if (!this.geoMap) {
             this.geoMap = L.map("geographical-map", {
                 zoomControl: true,
-                attributionControl: false
+                attributionControl: true
             }).setView([22.5, 79.5], 4.5);
+
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(this.geoMap);
 
             // Load India outline boundary for high contrast
             fetch("/api/map/geojson/india")
@@ -146,6 +151,9 @@ const MapEngine = {
                 </div>
             `;
             circle.bindPopup(popupHtml);
+            circle.on("click", () => {
+                if (window.App) window.App.applyChartSelection({ place: m.place });
+            });
 
             this.geoMarkersLayer.addLayer(circle);
         });
@@ -181,6 +189,8 @@ const MapEngine = {
                 .then(data => {
                     this.destinationsList = data.destinations || [];
                     this.districtMap = data.district_map || {};
+                    const destinationCount = document.getElementById("map-destination-count");
+                    if (destinationCount) destinationCount.textContent = `${(data.count || this.destinationsList.length).toLocaleString()} destination listings`;
                 })
                 .catch(err => console.log("Destinations fetch error:", err));
 

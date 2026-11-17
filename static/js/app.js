@@ -12,6 +12,8 @@ const App = {
         travel_groups: [],
         destinations: []
     },
+    latestRecommendations: [],
+    chartFilters: {},
 
     pageHeaders: {
         overview: {
@@ -52,6 +54,8 @@ const App = {
      * Initialize Application
      */
     init: function() {
+        window.App = this;
+        Charts.setSelectionHandler(selection => this.applyChartSelection(selection));
         this.bindEvents();
         this.fetchFilterMetadata().then(() => {
             this.loadCurrentSection();
@@ -90,6 +94,14 @@ const App = {
 
         document.getElementById("btn-reset-filters").addEventListener("click", () => {
             this.resetFilters();
+            this.loadCurrentSection();
+        });
+
+        document.getElementById("btn-clear-chart-filters").addEventListener("click", () => {
+            this.chartFilters = {};
+            const reviewSearch = document.getElementById("review-keyword-input");
+            if (reviewSearch) reviewSearch.value = "";
+            this.updateChartFilterSummary();
             this.loadCurrentSection();
         });
 
@@ -171,6 +183,28 @@ const App = {
         const battleB = document.getElementById("battle-dest-b");
         if (battleA) battleA.addEventListener("change", () => this.updateDestinationBattle());
         if (battleB) battleB.addEventListener("change", () => this.updateDestinationBattle());
+
+        const medalGrid = document.getElementById("mcda-medal-grid");
+        if (medalGrid) {
+            medalGrid.addEventListener("click", (event) => {
+                const button = event.target.closest("[data-plan-destination], [data-compare-destination]");
+                if (!button) return;
+
+                const destination = button.dataset.planDestination || button.dataset.compareDestination;
+                if (button.hasAttribute("data-plan-destination")) {
+                    document.getElementById("estimator-destination").value = destination;
+                    this.switchSection("financial");
+                    return;
+                }
+
+                const alternative = this.latestRecommendations.find(item => item.Place !== destination);
+                if (!alternative) return;
+                document.getElementById("battle-dest-a").value = destination;
+                document.getElementById("battle-dest-b").value = alternative.Place;
+                this.switchSection("recommender");
+                document.querySelector('.sub-tab-btn[data-subtab="battle"]').click();
+            });
+        }
     },
 
     /**
@@ -216,14 +250,54 @@ const App = {
             categories: catVal === "All" ? [] : [catVal],
             seasons: seasonVal === "All" ? [] : [seasonVal],
             travel_groups: groupVal === "All" ? [] : [groupVal],
-            min_rating: minRating > 1.0 ? minRating : null
+            min_rating: minRating > 1.0 ? minRating : null,
+            chart_filters: this.chartFilters
         };
+    },
+
+    applyChartSelection: function(selection) {
+        const keys = Object.keys(selection || {}).filter(key => selection[key] !== "");
+        if (!keys.length) return;
+
+        const isAlreadySelected = keys.every(key => this.chartFilters[key] === selection[key]);
+        if (isAlreadySelected) {
+            keys.forEach(key => delete this.chartFilters[key]);
+        } else {
+            keys.forEach(key => { this.chartFilters[key] = selection[key]; });
+        }
+
+        const reviewSearch = document.getElementById("review-keyword-input");
+        if (reviewSearch && keys.includes("review_keyword")) {
+            reviewSearch.value = this.chartFilters.review_keyword || "";
+        }
+
+        this.updateChartFilterSummary();
+        this.loadCurrentSection();
+    },
+
+    updateChartFilterSummary: function() {
+        const labels = {
+            state: "State", category: "Category", season: "Season", travel_group: "Travel group",
+            place: "Destination", month: "Month", age_group: "Age group", gender: "Gender",
+            recommended: "Recommendation", location_type: "Setting", review_keyword: "Review keyword"
+        };
+        const entries = Object.entries(this.chartFilters);
+        const summary = document.getElementById("chart-filter-summary");
+        const clearButton = document.getElementById("btn-clear-chart-filters");
+        summary.textContent = entries.length
+            ? `Selected: ${entries.map(([key, value]) => `${labels[key] || key}: ${value}`).join(" · ")}`
+            : "";
+        clearButton.hidden = entries.length === 0;
     },
 
     /**
      * Reset All Filters to Defaults
      */
     resetFilters: function() {
+        this.chartFilters = {};
+        const reviewSearch = document.getElementById("review-keyword-input");
+        if (reviewSearch) reviewSearch.value = "";
+        this.updateChartFilterSummary();
         document.getElementById("filter-state").value = "All";
         document.getElementById("filter-category").value = "All";
         document.getElementById("filter-season").value = "All";
@@ -257,6 +331,8 @@ const App = {
             const res = await fetch("/api/filters");
             const data = await res.json();
             this.metadata = data;
+            const visitorCountLabel = document.getElementById("map-visitor-count");
+            if (visitorCountLabel) visitorCountLabel.textContent = `${data.total_records.toLocaleString()} visitor records`;
 
             // Populate state dropdown
             const stateSelect = document.getElementById("filter-state");
@@ -740,6 +816,7 @@ const App = {
         });
         const data = await res.json();
         const recs = data.recommendations || [];
+        this.latestRecommendations = recs;
 
         // Render Top 3 Medal Cards
         const top3 = recs.slice(0, 3);
@@ -765,6 +842,12 @@ const App = {
                     <div><strong>Est Cost:</strong> ₹${item.Avg_Cost.toLocaleString()}</div>
                     <div><strong>Avg Stay:</strong> ${item.Avg_Stay} Days</div>
                     <div><strong>Popularity:</strong> ${item.Popularity}/100</div>
+                    <div><strong>Based on:</strong> ${item.Records.toLocaleString()} visitor records</div>
+                </div>
+                <div class="mcda-reasons"><strong>Why this match</strong><ul>${item.Reasons.map(reason => `<li>${this.escapeHtml(reason)}</li>`).join("")}</ul></div>
+                <div class="mcda-card-actions">
+                    <button class="btn btn-secondary btn-sm" type="button" data-compare-destination="${this.escapeHtml(item.Place)}">Compare</button>
+                    <button class="btn btn-primary btn-sm" type="button" data-plan-destination="${this.escapeHtml(item.Place)}">Estimate trip</button>
                 </div>
             `;
             medalGrid.appendChild(card);
@@ -785,9 +868,17 @@ const App = {
                 <td>₹${item.Avg_Cost.toLocaleString()}</td>
                 <td>${item.Avg_Stay} Days</td>
                 <td>${item.Popularity}</td>
+                <td>${item.Records.toLocaleString()}</td>
+                <td>${item.Reasons.slice(0, 2).map(reason => this.escapeHtml(reason)).join(" • ")}</td>
             `;
             tbody.appendChild(tr);
         });
+    },
+
+    escapeHtml: function(value) {
+        return String(value).replace(/[&<>"']/g, character => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        })[character]);
     },
 
     updateDestinationBattle: async function() {
