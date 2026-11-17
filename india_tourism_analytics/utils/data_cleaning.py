@@ -9,26 +9,26 @@ import pandas as pd
 import numpy as np
 
 DESTINATION_COORDINATES = {
-    "Munnar": {"lat": 10.0889, "lon": 77.0595, "region": "South"},
-    "Rann of Kutch": {"lat": 23.8344, "lon": 69.8329, "region": "West"},
-    "Konark Sun Temple": {"lat": 19.8876, "lon": 86.0945, "region": "East"},
-    "Charminar": {"lat": 17.3616, "lon": 78.4747, "region": "South"},
-    "Taj Mahal": {"lat": 27.1751, "lon": 78.0421, "region": "North"},
-    "Gangtok": {"lat": 27.3389, "lon": 88.6065, "region": "North East"},
-    "Gateway of India": {"lat": 18.9220, "lon": 72.8347, "region": "West"},
-    "Mysore Palace": {"lat": 12.3052, "lon": 76.6552, "region": "South"},
-    "Radhanagar Beach": {"lat": 11.9840, "lon": 92.9515, "region": "Islands"},
-    "Jaisalmer Fort": {"lat": 26.9124, "lon": 70.9127, "region": "North"},
-    "Alleppey Backwaters": {"lat": 9.4981, "lon": 76.3388, "region": "South"},
-    "Ooty": {"lat": 11.4102, "lon": 76.6950, "region": "South"},
-    "Hampi": {"lat": 15.3350, "lon": 76.4600, "region": "South"},
-    "India Gate": {"lat": 28.6129, "lon": 77.2295, "region": "North"},
-    "Baga Beach": {"lat": 15.5553, "lon": 73.7517, "region": "West"},
-    "Rishikesh": {"lat": 30.0869, "lon": 78.2676, "region": "North"},
-    "Manali": {"lat": 32.2432, "lon": 77.1892, "region": "North"},
-    "Darjeeling": {"lat": 27.0410, "lon": 88.2663, "region": "East"},
-    "Jaipur City Palace": {"lat": 26.9258, "lon": 75.8237, "region": "North"},
-    "Coorg": {"lat": 12.3375, "lon": 75.8069, "region": "South"}
+    "Munnar": {"lat": 10.0889, "lon": 77.0595, "region": "South", "district": "Idukki"},
+    "Rann of Kutch": {"lat": 23.8344, "lon": 69.8329, "region": "West", "district": "Kutch"},
+    "Konark Sun Temple": {"lat": 19.8876, "lon": 86.0945, "region": "East", "district": "Puri"},
+    "Charminar": {"lat": 17.3616, "lon": 78.4747, "region": "South", "district": "Hyderabad"},
+    "Taj Mahal": {"lat": 27.1751, "lon": 78.0421, "region": "North", "district": "Agra"},
+    "Gangtok": {"lat": 27.3389, "lon": 88.6065, "region": "North East", "district": "East Sikkim"},
+    "Gateway of India": {"lat": 18.9220, "lon": 72.8347, "region": "West", "district": "Mumbai City"},
+    "Mysore Palace": {"lat": 12.3052, "lon": 76.6552, "region": "South", "district": "Mysuru"},
+    "Radhanagar Beach": {"lat": 11.9840, "lon": 92.9515, "region": "Islands", "district": "South Andaman"},
+    "Jaisalmer Fort": {"lat": 26.9124, "lon": 70.9127, "region": "North", "district": "Jaisalmer"},
+    "Alleppey Backwaters": {"lat": 9.4981, "lon": 76.3388, "region": "South", "district": "Alappuzha"},
+    "Ooty": {"lat": 11.4102, "lon": 76.6950, "region": "South", "district": "Nilgiris"},
+    "Hampi": {"lat": 15.3350, "lon": 76.4600, "region": "South", "district": "Vijayanagara"},
+    "India Gate": {"lat": 28.6129, "lon": 77.2295, "region": "North", "district": "New Delhi"},
+    "Baga Beach": {"lat": 15.5553, "lon": 73.7517, "region": "West", "district": "North Goa"},
+    "Rishikesh": {"lat": 30.0869, "lon": 78.2676, "region": "North", "district": "Dehradun"},
+    "Manali": {"lat": 32.2432, "lon": 77.1892, "region": "North", "district": "Kullu"},
+    "Darjeeling": {"lat": 27.0410, "lon": 88.2663, "region": "East", "district": "Darjeeling"},
+    "Jaipur City Palace": {"lat": 26.9258, "lon": 75.8237, "region": "North", "district": "Jaipur"},
+    "Coorg": {"lat": 12.3375, "lon": 75.8069, "region": "South", "district": "Kodagu"}
 }
 
 NUMERICAL_COLUMNS = [
@@ -160,10 +160,11 @@ def clean_tourism_data(df_raw, apply_record1_fix=True):
         if rec_missing > 0:
             df['Recommended'] = df['Recommended'].fillna(recommended_mode)
 
-    # 5. Attach geographical coordinates for mapping
+    # 5. Attach geographical coordinates and district for mapping
     df['Latitude'] = df['Place'].map(lambda p: DESTINATION_COORDINATES.get(p, {}).get('lat', np.nan))
     df['Longitude'] = df['Place'].map(lambda p: DESTINATION_COORDINATES.get(p, {}).get('lon', np.nan))
     df['Region'] = df['Place'].map(lambda p: DESTINATION_COORDINATES.get(p, {}).get('region', 'Other'))
+    df['District'] = df['Place'].map(lambda p: DESTINATION_COORDINATES.get(p, {}).get('district', ''))
 
     # Save cleaned files to data directory and root directory
     os.makedirs("data", exist_ok=True)

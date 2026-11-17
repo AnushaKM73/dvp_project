@@ -158,22 +158,70 @@ def get_demographics_summary(df):
     return age_dist, gender_dist, travel_dist, crosstab
 
 
+def get_category_cost_extremes(df):
+    """
+    Calculate the actual minimum and maximum cost destinations for each tourism category
+    from the provided dataset. Returns a formatted summary DataFrame.
+    """
+    if df.empty or 'Category' not in df.columns or 'Estimated_Cost_INR' not in df.columns:
+        return pd.DataFrame(columns=[
+            'Category',
+            'Lowest Cost Destination',
+            'Lowest Cost',
+            'Highest Cost Destination',
+            'Highest Cost'
+        ])
+
+    category_order = ["Nature", "Cultural", "Historical", "Beach", "Adventure"]
+    present_categories = [c for c in category_order if c in df['Category'].dropna().unique()]
+    other_categories = [c for c in df['Category'].dropna().unique() if c not in category_order]
+    categories = present_categories + sorted(other_categories)
+
+    rows = []
+    for cat in categories:
+        cat_df = df[df['Category'] == cat]
+        if cat_df.empty:
+            continue
+
+        min_cost = cat_df['Estimated_Cost_INR'].min()
+        max_cost = cat_df['Estimated_Cost_INR'].max()
+
+        min_places = cat_df[cat_df['Estimated_Cost_INR'] == min_cost]['Place'].dropna().unique().tolist()
+        max_places = cat_df[cat_df['Estimated_Cost_INR'] == max_cost]['Place'].dropna().unique().tolist()
+
+        min_places_str = ", ".join(min_places) if min_places else "N/A"
+        max_places_str = ", ".join(max_places) if max_places else "N/A"
+
+        rows.append({
+            'Category': cat,
+            'Lowest Cost Destination': min_places_str,
+            'Lowest Cost': f"₹{int(min_cost):,}",
+            'Highest Cost Destination': max_places_str,
+            'Highest Cost': f"₹{int(max_cost):,}"
+        })
+
+    return pd.DataFrame(rows)
+
+
 def get_budget_destinations(df, max_budget):
-    """Filter destinations within a user-specified budget."""
-    if df.empty:
+    """
+    Filter destinations within a user-specified budget based on actual estimated costs.
+    Computes genuine destination-level metrics from the dataset without arbitrary record slicing.
+    """
+    if df.empty or 'Estimated_Cost_INR' not in df.columns:
         return pd.DataFrame()
-    filtered = df[df['Estimated_Cost_INR'] <= max_budget]
-    if filtered.empty:
-        return pd.DataFrame()
-    dest_summary = filtered.groupby(['Place', 'State', 'Category']).agg(
+    dest_summary = df.groupby(['Place', 'State', 'Category']).agg(
         Avg_Cost=('Estimated_Cost_INR', 'mean'),
         Min_Cost=('Estimated_Cost_INR', 'min'),
         Max_Cost=('Estimated_Cost_INR', 'max'),
         Avg_Rating=('Rating', 'mean'),
         Avg_Stay=('Stay_Days', 'mean'),
         Records=('Visitor_ID', 'count')
-    ).reset_index().sort_values(by='Avg_Cost', ascending=True)
-    return dest_summary
+    ).reset_index()
+
+    matched = dest_summary[dest_summary['Avg_Cost'] <= max_budget].copy()
+    matched = matched.sort_values(by='Avg_Cost', ascending=True).reset_index(drop=True)
+    return matched
 
 
 def compute_outliers_iqr(df, column):

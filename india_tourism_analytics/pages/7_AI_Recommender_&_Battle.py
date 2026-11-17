@@ -1,5 +1,5 @@
 """
-Dashboard 9: AI Recommender, Head-to-Head Destination Battle & 3D Analytics
+Dashboard 7: AI Recommender, Head-to-Head Destination Battle & 3D Analytics
 Academic WOW Factors: Multi-criteria Decision Analysis, Comparative Benchmarking, and 3D Visual Modeling
 """
 

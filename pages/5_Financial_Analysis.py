@@ -16,7 +16,7 @@ from utils.visualizations import (
     plot_cost_by_state,
     plot_cost_vs_stay
 )
-from utils.data_analysis import get_budget_destinations
+from utils.data_analysis import get_budget_destinations, get_category_cost_extremes
 
 st.set_page_config(
     page_title="Financial Analysis - India Tourism BI",
@@ -48,13 +48,13 @@ daily_burn = int(round(avg_cost / avg_stay)) if avg_stay > 0 else avg_cost
 
 c1, c2, c3, c4 = st.columns(4)
 with c1:
-    render_kpi_card("Average Trip Expense", f"₹{avg_cost:,}", "Overall mean spend", "#0284c7", "💳")
+    render_kpi_card("Average Estimated Cost per Record", f"₹{avg_cost:,}", "Overall mean spend per record", "#0284c7", "💳")
 with c2:
-    render_kpi_card("Lowest Recorded Cost", f"₹{min_cost:,}", "Minimum budget package", "#10b981", "🏷️")
+    render_kpi_card("Lowest Recorded Estimated Cost", f"₹{min_cost:,}", "Minimum budget package", "#10b981", "🏷️")
 with c3:
-    render_kpi_card("Highest Recorded Cost", f"₹{max_cost:,}", "Maximum premium spend", "#ec4899", "💎")
+    render_kpi_card("Highest Recorded Estimated Cost", f"₹{max_cost:,}", "Maximum premium spend", "#ec4899", "💎")
 with c4:
-    render_kpi_card("Est. Daily Expenditure", f"₹{daily_burn:,}/day", f"Based on {avg_stay} days avg stay", "#f97316", "⏱️")
+    render_kpi_card("Average Estimated Cost per Day", f"₹{daily_burn:,}/day", f"Based on {avg_stay} days avg stay", "#f97316", "⏱️")
 
 st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
@@ -65,14 +65,31 @@ col_c1, col_c2 = st.columns(2)
 
 with col_c1:
     st.plotly_chart(plot_cost_by_category(filtered_df), use_container_width=True)
+    st.markdown("<div style='font-size: 13px; font-weight: 700; color: #334155; margin: 4px 0 6px 0;'>📋 Category Cost Extremes (Empirical Minimum & Maximum)</div>", unsafe_allow_html=True)
+    category_summary_tbl = get_category_cost_extremes(filtered_df)
+    st.dataframe(category_summary_tbl, use_container_width=True, hide_index=True)
 
 with col_c2:
     st.plotly_chart(plot_cost_by_state(filtered_df, top_n=10), use_container_width=True)
+    st.markdown(
+        "<p style='font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.5;'>"
+        "📌 <b>Note:</b> Average cost reflects the mean <code>Estimated_Cost_INR</code> of destination records belonging to each state. "
+        "It does not represent state-wide travel expenses."
+        "</p>",
+        unsafe_allow_html=True
+    )
 
 # -------------------------------------------------------------
 # ROW 2: COST VS STAY DURATION CORRELATION
 # -------------------------------------------------------------
 st.plotly_chart(plot_cost_vs_stay(filtered_df), use_container_width=True)
+st.markdown(
+    "<p style='font-size: 13px; color: #64748b; margin-top: -6px; margin-bottom: 20px; font-style: italic;'>"
+    "ℹ️ The trendline represents the overall statistical relationship between estimated travel cost and stay duration. "
+    "It does not indicate the exact additional cost of one extra day."
+    "</p>",
+    unsafe_allow_html=True
+)
 
 # -------------------------------------------------------------
 # INTERACTIVE TRIP BUDGET SIMULATOR
@@ -105,7 +122,7 @@ with col_stats:
     if not budget_results.empty:
         matched_count = len(budget_results)
         cheapest_match = budget_results.iloc[0]['Place']
-        cheapest_val = int(budget_results.iloc[0]['Avg_Cost'])
+        cheapest_val = int(round(budget_results.iloc[0]['Avg_Cost']))
         st.markdown(f"""
         <div style="display: flex; gap: 16px; margin-top: 10px;">
             <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 14px; flex: 1;">
@@ -194,9 +211,20 @@ st.markdown(f"""
                 <div style="font-size: 18px; font-weight: 700; color: #0f172a;">₹{estimated_person:,}</div>
             </div>
             <div style="text-align: right;">
-                <div style="font-size: 11px; font-weight: 600; color: #64748b;">DAILY BURN / PERSON</div>
+                <div style="font-size: 11px; font-weight: 600; color: #64748b;">DAILY EXPENSE PER PERSON</div>
                 <div style="font-size: 18px; font-weight: 700; color: #10b981;">₹{int(estimated_person / trip_days):,}/day</div>
             </div>
+        </div>
+    </div>
+    <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #475569; line-height: 1.6;">
+        <div style="font-weight: 700; color: #1e293b; margin-bottom: 4px;">📐 Estimation Assumptions & Calculation Methodology:</div>
+        <ul style="margin: 0 0 8px 18px; padding: 0;">
+            <li><b>Empirical Destination Baseline:</b> Computed from recorded visits for <b>{calc_dest}</b> in the dataset (Average Cost: ₹{int(round(base_cost)):,} across {base_stay:.1f} days &approx; ₹{int(round(daily_rate)):,}/day per person).</li>
+            <li><b>Comfort Multipliers:</b> <b>Budget (0.7&times;)</b> models homestay/hostel accommodation and public transit; <b>Standard (1.0&times;)</b> models 3-star hotels and standard dining; <b>Premium / Luxury (1.8&times;)</b> models 4/5-star hospitality, private cab charters, and premium activities.</li>
+            <li><b>Group Scaling:</b> Calculated as (Daily Rate &times; Duration &times; Multiplier) &times; Number of Travelers ({num_travelers} pax). Group bookings may achieve additional shared lodging economies in practice.</li>
+        </ul>
+        <div style="color: #b45309; font-weight: 600;">
+            ⚠️ Note: This result is an estimated planning value based on historical dataset averages, not a guaranteed commercial travel quotation or booking price.
         </div>
     </div>
 </div>

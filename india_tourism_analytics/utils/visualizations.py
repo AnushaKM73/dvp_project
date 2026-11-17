@@ -16,7 +16,7 @@ import seaborn as sns
 from wordcloud import WordCloud, STOPWORDS
 import io
 import folium
-from folium.plugins import MarkerCluster
+from folium.plugins import MarkerCluster, HeatMap
 
 # Power BI Color Palettes
 PBI_PALETTE = ['#0284c7', '#0d9488', '#f97316', '#6366f1', '#10b981', '#ec4899', '#eab308', '#8b5cf6', '#14b8a6', '#f43f5e']
@@ -171,27 +171,36 @@ def plot_recommendation_pie(df):
 # -------------------------------------------------------------
 def create_india_folium_map(df):
     """
-    Generate an interactive Folium map of India displaying the actual 20 destinations
-    with category color badges, ratings, costs, and visitor stats.
+    Generate an interactive Folium map of India displaying prominent destinations
+    with OpenStreetMap standard raster tiles (no API key required), distinct category-colored markers,
+    smart clustering, hover tooltips, and detailed Power BI popups.
     """
-    # Center map on Central India
     m = folium.Map(
-        location=[21.7679, 78.8718],
+        location=[22.0, 78.9],
         zoom_start=5,
-        tiles="OpenStreetMap",
-        control_scale=True
+        tiles="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        attr='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        control_scale=True,
+        prefer_canvas=True
     )
 
-    category_colors = {
-        'Nature': '#10b981',
-        'Cultural': '#f97316',
-        'Historical': '#6366f1',
-        'Beach': '#06b6d4',
-        'Adventure': '#e11d48'
+    marker_cluster = MarkerCluster(
+        name="Tourist Destinations",
+        disableClusteringAtZoom=8,
+        spiderfyOnMaxZoom=True,
+        showCoverageOnHover=False
+    ).add_to(m)
+
+    category_meta = {
+        'Nature': {'color': '#10b981', 'icon': '🌿'},
+        'Cultural': {'color': '#f97316', 'icon': '🏛️'},
+        'Historical': {'color': '#6366f1', 'icon': '🏰'},
+        'Beach': {'color': '#06b6d4', 'icon': '🏖️'},
+        'Adventure': {'color': '#e11d48', 'icon': '🧗'}
     }
 
     # Aggregate destination-level stats
-    dest_stats = df.groupby(['Place', 'State', 'Category', 'Location_Type']).agg(
+    dest_stats = df.groupby(['Place', 'State', 'Category'], dropna=True).agg(
         Records=('Visitor_ID', 'count'),
         Avg_Rating=('Rating', 'mean'),
         Avg_Cost=('Estimated_Cost_INR', 'mean'),
@@ -200,12 +209,12 @@ def create_india_folium_map(df):
         Popularity=('Popularity_Score', 'mean'),
         Cleanliness=('Cleanliness_Rating', 'mean'),
         Safety=('Safety_Rating', 'mean'),
-        Rec_Rate=('Recommended', lambda x: (x == 'Yes').mean() * 100),
+        Rec_Rate=('Recommended', lambda x: (x == 'Yes').mean() * 100 if len(x) > 0 else 0),
         Latitude=('Latitude', 'first'),
-        Longitude=('Longitude', 'first')
+        Longitude=('Longitude', 'first'),
+        Location_Type=('Location_Type', 'first'),
+        Best_Time=('Best_Time_to_Visit', 'first')
     ).reset_index()
-
-    marker_cluster = MarkerCluster().add_to(m)
 
     for _, row in dest_stats.iterrows():
         lat = row['Latitude']
@@ -213,38 +222,166 @@ def create_india_folium_map(df):
         if pd.isna(lat) or pd.isna(lon):
             continue
 
-        color = category_colors.get(row['Category'], '#0284c7')
+        cat = row['Category']
+        meta = category_meta.get(cat, {'color': '#0284c7', 'icon': '📍'})
+        color = meta['color']
+        icon_char = meta['icon']
+        place = row['Place']
+        state = row['State']
+        avg_rating = row['Avg_Rating']
+        avg_cost = row['Avg_Cost']
+        avg_stay = row['Avg_Stay']
+        total_visitors = row['Total_Visitors']
+        loc_type = row.get('Location_Type', 'Landmark')
+        best_time = row.get('Best_Time', 'October to March')
+        if pd.isna(best_time) or not str(best_time).strip():
+            best_time = "Year-round / Peak season"
+
+        tooltip_text = f"📍 {place} ({state}) | {cat} | ⭐ {avg_rating:.2f} | ₹{int(avg_cost):,}"
 
         popup_html = f"""
-        <div style="font-family: Arial, sans-serif; width: 230px; padding: 6px;">
-            <div style="font-size: 15px; font-weight: bold; color: #0f172a; margin-bottom: 2px;">{row['Place']}</div>
-            <div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">{row['State']} &bull; 
-                <span style="background:{color}; color:#fff; padding:2px 6px; border-radius:10px; font-size:10px;">{row['Category']}</span>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; width: 265px; padding: 2px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid {color}; padding-bottom: 5px; margin-bottom: 8px;">
+                <span style="font-size: 14.5px; font-weight: 700; color: #0f172a;">{place}</span>
+                <span style="background-color: {color}; color: #ffffff; padding: 2px 7px; border-radius: 9999px; font-size: 10.5px; font-weight: 600;">{icon_char} {cat}</span>
             </div>
-            <hr style="border:0; border-top:1px solid #e2e8f0; margin: 6px 0;">
-            <table style="width:100%; font-size: 11px; line-height: 1.5; color: #334155;">
-                <tr><td><b>Type:</b></td><td>{row['Location_Type']}</td></tr>
-                <tr><td><b>Avg Rating:</b></td><td>⭐ {row['Avg_Rating']:.2f}/5.0</td></tr>
-                <tr><td><b>Avg Cost:</b></td><td>₹{int(row['Avg_Cost']):,}</td></tr>
-                <tr><td><b>Avg Stay:</b></td><td>{row['Avg_Stay']:.1f} days</td></tr>
-                <tr><td><b>Popularity:</b></td><td>{row['Popularity']:.1f}/100</td></tr>
-                <tr><td><b>Recommended:</b></td><td>{row['Rec_Rate']:.0f}%</td></tr>
+            <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">
+                📍 <b>{state}</b> &bull; {loc_type}
+            </div>
+            <table style="width: 100%; font-size: 11.5px; border-collapse: collapse; line-height: 1.45;">
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="color: #64748b; padding: 3px 0;">Average Rating</td>
+                    <td style="text-align: right; font-weight: 700; color: #0f172a; padding: 3px 0;">⭐ {avg_rating:.2f} / 5.0</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="color: #64748b; padding: 3px 0;">Estimated Trip Cost</td>
+                    <td style="text-align: right; font-weight: 700; color: #0f172a; padding: 3px 0;">₹{int(avg_cost):,}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="color: #64748b; padding: 3px 0;">Stay Duration</td>
+                    <td style="text-align: right; font-weight: 600; color: #0f172a; padding: 3px 0;">{avg_stay:.1f} days</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="color: #64748b; padding: 3px 0;">Estimated Visitors</td>
+                    <td style="text-align: right; font-weight: 600; color: #0f172a; padding: 3px 0;">{int(total_visitors):,}</td>
+                </tr>
+                <tr>
+                    <td style="color: #64748b; padding: 3px 0;">Best Time to Visit</td>
+                    <td style="text-align: right; font-weight: 600; color: #0284c7; padding: 3px 0;">{best_time}</td>
+                </tr>
             </table>
         </div>
         """
 
-        folium.CircleMarker(
+        pin_html = f"""
+        <div style="
+            background: {color};
+            width: 28px;
+            height: 28px;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            border: 2px solid #ffffff;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        ">
+            <span style="transform: rotate(45deg); font-size: 13px; display: block; line-height: 1;">{icon_char}</span>
+        </div>
+        """
+
+        icon = folium.DivIcon(
+            html=pin_html,
+            icon_size=(28, 28),
+            icon_anchor=(14, 28),
+            popup_anchor=(0, -26)
+        )
+
+        folium.Marker(
             location=[lat, lon],
-            radius=9,
-            popup=folium.Popup(popup_html, max_width=260),
-            tooltip=f"{row['Place']} ({row['State']}) - ⭐ {row['Avg_Rating']:.1f}",
-            color=color,
-            fill=True,
-            fill_color=color,
-            fill_opacity=0.85,
-            weight=2
+            icon=icon,
+            tooltip=tooltip_text,
+            popup=folium.Popup(popup_html, max_width=285)
         ).add_to(marker_cluster)
 
+    return m
+
+
+def create_india_footfall_heatmap(df):
+    """Map estimated visitor counts as a smoothed heat layer and proportional bubbles at destination coordinates using OpenStreetMap tiles."""
+    m = folium.Map(
+        location=[22.0, 78.9],
+        zoom_start=5,
+        tiles="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        attr='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        control_scale=True,
+        prefer_canvas=True
+    )
+    destination_volume = (
+        df.groupby(["Place", "State", "Category"], dropna=True)
+        .agg(
+            Footfall=("Visitors_Count", "sum"),
+            Avg_Rating=("Rating", "mean"),
+            Avg_Cost=("Estimated_Cost_INR", "mean"),
+            Latitude=("Latitude", "first"),
+            Longitude=("Longitude", "first"),
+        )
+        .reset_index()
+    )
+    max_vis = destination_volume['Footfall'].max() if not destination_volume.empty else 1
+    min_vis = destination_volume['Footfall'].min() if not destination_volume.empty else 0
+
+    for _, row in destination_volume.iterrows():
+        lat = row['Latitude']
+        lon = row['Longitude']
+        if pd.isna(lat) or pd.isna(lon):
+            continue
+        vis = row['Footfall']
+        norm = (vis - min_vis) / (max_vis - min_vis) if max_vis > min_vis else 0.5
+        radius = 12 + norm * 20
+
+        tooltip_b = f"👥 {row['Place']} ({row['State']}) • Estimated Footfall: {int(vis):,} visitors"
+        popup_b = f"""
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; width: 250px; padding: 4px;">
+            <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">{row['Place']}</div>
+            <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">📍 {row['State']} &bull; {row['Category']}</div>
+            <div style="background: #eff6ff; border-left: 3px solid #0284c7; padding: 6px 10px; border-radius: 4px; margin-bottom: 6px;">
+                <div style="font-size: 10px; color: #64748b; text-transform: uppercase;">Estimated Visitor Footfall</div>
+                <div style="font-size: 18px; font-weight: 800; color: #0284c7;">{int(vis):,}</div>
+            </div>
+            <div style="font-size: 11px; color: #475569;">
+                Avg Rating: ⭐ <b>{row['Avg_Rating']:.2f}</b> | Avg Cost: <b>₹{int(row['Avg_Cost']):,}</b>
+            </div>
+        </div>
+        """
+        folium.CircleMarker(
+            location=[lat, lon],
+            radius=radius,
+            color="#e11d48",
+            weight=2,
+            fill=True,
+            fill_color="#f43f5e",
+            fill_opacity=0.65,
+            tooltip=tooltip_b,
+            popup=folium.Popup(popup_b, max_width=270)
+        ).add_to(m)
+
+    heat_points = [
+        [row.Latitude, row.Longitude, max(float(row.Footfall), 0.0)]
+        for row in destination_volume.itertuples(index=False)
+        if pd.notna(row.Latitude) and pd.notna(row.Longitude)
+    ]
+    if heat_points:
+        HeatMap(
+            heat_points,
+            name="Estimated visitor footfall",
+            radius=28,
+            blur=20,
+            min_opacity=0.3,
+            max_zoom=7,
+        ).add_to(m)
+    folium.LayerControl(collapsed=False).add_to(m)
     return m
 
 
@@ -416,28 +553,60 @@ def plot_cost_by_category(df):
         color='Category',
         color_discrete_sequence=PBI_PALETTE,
         points='all',
+        custom_data=['Place', 'State', 'Category', 'Estimated_Cost_INR', 'Stay_Days'],
         title="Estimated Travel Cost Distribution Across Tourism Categories"
+    )
+    fig.update_traces(
+        hovertemplate=(
+            "<b>Destination:</b> %{customdata[0]}<br>"
+            "<b>State:</b> %{customdata[1]}<br>"
+            "<b>Category:</b> %{customdata[2]}<br>"
+            "<b>Estimated Cost:</b> ₹%{customdata[3]:,}<br>"
+            "<b>Stay Duration:</b> %{customdata[4]} days<extra></extra>"
+        )
     )
     fig.update_layout(showlegend=False, yaxis_title="Cost in INR (₹)")
     return apply_pbi_theme(fig)
 
 
 def plot_cost_by_state(df, top_n=10):
-    """Bar chart: Average travel expense by state."""
-    state_cost = df.groupby('State')['Estimated_Cost_INR'].mean().reset_index()
-    state_cost = state_cost.sort_values(by='Estimated_Cost_INR', ascending=False).head(top_n)
+    """Bar chart: Average estimated cost per destination across top states."""
+    state_cost = df.groupby('State').agg(
+        Avg_Cost=('Estimated_Cost_INR', 'mean'),
+        Record_Count=('Estimated_Cost_INR', 'count'),
+        Min_Cost=('Estimated_Cost_INR', 'min'),
+        Max_Cost=('Estimated_Cost_INR', 'max')
+    ).reset_index()
+    state_cost = state_cost.sort_values(by='Avg_Cost', ascending=False).head(top_n)
     fig = px.bar(
         state_cost,
-        x='Estimated_Cost_INR',
+        x='Avg_Cost',
         y='State',
         orientation='h',
-        text=state_cost['Estimated_Cost_INR'].apply(lambda x: f"₹{int(x):,}"),
-        color='Estimated_Cost_INR',
+        custom_data=['State', 'Record_Count', 'Avg_Cost', 'Min_Cost', 'Max_Cost'],
+        text=state_cost['Avg_Cost'].apply(lambda x: f"₹{int(round(x)):,}"),
+        color='Avg_Cost',
         color_continuous_scale=px.colors.sequential.Sunset,
-        title=f"Top {top_n} States by Average Travel Cost (INR)"
+        title="Top 10 States by Average Estimated Cost per Destination"
     )
-    fig.update_layout(yaxis=dict(autorange="reversed"), coloraxis_showscale=False)
-    fig.update_traces(textposition='outside')
+    hovertemplate = (
+        "<b>State:</b> %{customdata[0]}<br>"
+        "<b>Destination Records Included:</b> %{customdata[1]}<br>"
+        "<b>Average Estimated Cost:</b> ₹%{customdata[2]:,.0f}<br>"
+        "<b>Minimum Destination Cost:</b> ₹%{customdata[3]:,}<br>"
+        "<b>Maximum Destination Cost:</b> ₹%{customdata[4]:,}<br>"
+        "<i>Note: Average per destination record in state</i><extra></extra>"
+    )
+    fig.update_layout(
+        yaxis=dict(autorange="reversed"),
+        xaxis_title="Average Estimated Cost (INR)",
+        yaxis_title="State",
+        coloraxis_showscale=False
+    )
+    fig.update_traces(
+        textposition='outside',
+        hovertemplate=hovertemplate
+    )
     return apply_pbi_theme(fig)
 
 
@@ -449,8 +618,19 @@ def plot_cost_vs_stay(df):
         y='Estimated_Cost_INR',
         color='Category',
         color_discrete_sequence=PBI_PALETTE,
-        hover_data=['Place', 'State', 'Rating'],
+        custom_data=['Place', 'State', 'Category', 'Stay_Days', 'Estimated_Cost_INR'],
         title="Estimated Cost vs Stay Duration (with Linear Regression Trendline)"
+    )
+
+    fig.update_traces(
+        hovertemplate=(
+            "<b>Destination:</b> %{customdata[0]}<br>"
+            "<b>State:</b> %{customdata[1]}<br>"
+            "<b>Category:</b> %{customdata[2]}<br>"
+            "<b>Stay Duration:</b> %{customdata[3]} days<br>"
+            "<b>Estimated Cost:</b> ₹%{customdata[4]:,}<extra></extra>"
+        ),
+        selector=dict(type='scatter', mode='markers')
     )
 
     # Pure NumPy linear regression trendline (zero external statsmodels dependency)
@@ -467,7 +647,8 @@ def plot_cost_vs_stay(df):
                 y=y_line,
                 mode='lines',
                 name=f'OLS Trend ({slope:+.1f} ₹/day)',
-                line=dict(color='#0f172a', width=2.5, dash='dash')
+                line=dict(color='#0f172a', width=2.5, dash='dash'),
+                hovertemplate=f"<b>OLS Regression Trendline</b><br>Slope: {slope:+.2f} ₹/day<extra></extra>"
             ))
 
     fig.update_layout(xaxis_title="Stay Duration (Days)", yaxis_title="Estimated Cost (INR)")
@@ -475,8 +656,198 @@ def plot_cost_vs_stay(df):
 
 
 # -------------------------------------------------------------
-# REVIEW WORDCLOUD & TEXT ANALYTICS
+# REVIEW TEXT ANALYTICS & SENTIMENT VISUALIZATIONS
 # -------------------------------------------------------------
+def plot_top_review_words(df, top_n=10):
+    """Horizontal bar chart: Top N most frequently used words in tourist reviews with rich interactive details."""
+    import re
+    from collections import Counter
+
+    if df.empty or 'Review' not in df.columns:
+        fig = px.bar(title="Top 10 Most Frequently Used Words in Tourist Reviews")
+        fig.update_layout(xaxis_title="Frequency Count", yaxis_title="Word")
+        return apply_pbi_theme(fig)
+
+    # Standard English stopwords
+    stopwords = {
+        'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'aren',
+        'as', 'at', 'be', 'because', 'been', 'before', 'being', 'below', 'between', 'both', 'but',
+        'by', 'can', 'cannot', 'could', 'did', 'do', 'does', 'doing', 'down', 'during', 'each', 'few',
+        'for', 'from', 'further', 'had', 'has', 'have', 'having', 'he', 'her', 'here', 'hers', 'herself',
+        'him', 'himself', 'his', 'how', 'i', 'if', 'in', 'into', 'is', 'it', 'its', 'itself', 'me', 'more',
+        'most', 'my', 'myself', 'no', 'nor', 'not', 'of', 'off', 'on', 'once', 'only', 'or', 'other',
+        'ought', 'our', 'ours', 'ourselves', 'out', 'over', 'own', 'same', 'she', 'should', 'so', 'some',
+        'such', 'than', 'that', 'the', 'their', 'theirs', 'them', 'themselves', 'then', 'there', 'these',
+        'they', 'this', 'those', 'through', 'to', 'too', 'under', 'until', 'up', 'very', 'was', 'we',
+        'were', 'what', 'when', 'where', 'which', 'while', 'who', 'whom', 'why', 'with', 'would', 'you',
+        'your', 'yours', 'yourself', 'yourselves', 'also', 'still'
+    }
+
+    all_words = []
+    for text in df['Review'].dropna():
+        tokens = re.findall(r'\b[a-zA-Z]{3,}\b', str(text).lower())
+        all_words.extend([w for w in tokens if w not in stopwords])
+
+    if not all_words:
+        fig = px.bar(title="Top 10 Most Frequently Used Words in Tourist Reviews")
+        fig.update_layout(xaxis_title="Frequency Count", yaxis_title="Word")
+        return apply_pbi_theme(fig)
+
+    top_word_counts = Counter(all_words).most_common(top_n)
+
+    has_place = 'Place' in df.columns
+    rows = []
+    for word, freq in top_word_counts:
+        pattern = re.compile(rf'\b{re.escape(word)}\b', re.IGNORECASE)
+        matching = df[df['Review'].astype(str).str.contains(pattern, na=False)]
+
+        top_dest = "No specific destination association established"
+        if has_place and not matching.empty:
+            dest_counts = matching['Place'].dropna().value_counts()
+            if not dest_counts.empty:
+                top_dest = f"{dest_counts.index[0]} ({dest_counts.iloc[0]} reviews)"
+
+        example_rev = "No example review available"
+        if not matching.empty:
+            example_rev = str(matching['Review'].dropna().iloc[0]).strip()
+
+        rows.append({
+            'Word': word.capitalize(),
+            'Frequency': freq,
+            'Top_Destination': top_dest,
+            'Example_Review': example_rev
+        })
+
+    word_df = pd.DataFrame(rows).sort_values(by='Frequency', ascending=False)
+
+    fig = px.bar(
+        word_df,
+        x='Frequency',
+        y='Word',
+        orientation='h',
+        text='Frequency',
+        custom_data=['Word', 'Frequency', 'Top_Destination', 'Example_Review'],
+        color='Frequency',
+        color_continuous_scale=px.colors.sequential.Teal,
+        title="Top 10 Most Frequently Used Words in Tourist Reviews"
+    )
+
+    hovertemplate = (
+        "<b>Word:</b> %{customdata[0]}<br>"
+        "<b>Frequency:</b> %{customdata[1]:,} occurrences<br>"
+        "<b>Top Associated Destination:</b> %{customdata[2]}<br>"
+        "<b>Example Review:</b> \"%{customdata[3]}\"<extra></extra>"
+    )
+
+    fig.update_layout(
+        yaxis=dict(autorange="reversed"),
+        xaxis_title="Frequency Count",
+        yaxis_title="Word",
+        coloraxis_showscale=False
+    )
+    fig.update_traces(
+        textposition='outside',
+        hovertemplate=hovertemplate
+    )
+    return apply_pbi_theme(fig)
+
+
+def plot_sentiment_doughnut(analysis_df):
+    """Doughnut chart: VADER sentiment distribution across Positive, Neutral, and Negative categories."""
+    category_order = ['Positive', 'Neutral', 'Negative']
+    counts_dict = analysis_df['Sentiment'].value_counts().to_dict() if (not analysis_df.empty and 'Sentiment' in analysis_df.columns) else {}
+
+    senti_data = pd.DataFrame([
+        {'Sentiment': cat, 'Count': counts_dict.get(cat, 0)}
+        for cat in category_order
+    ])
+
+    fig = px.pie(
+        senti_data,
+        names='Sentiment',
+        values='Count',
+        hole=0.6,
+        color='Sentiment',
+        color_discrete_map={
+            'Positive': '#10b981',
+            'Neutral': '#64748b',
+            'Negative': '#ef4444'
+        },
+        category_orders={'Sentiment': category_order},
+        title="VADER Sentiment Distribution"
+    )
+
+    fig.update_traces(
+        textinfo='percent+label',
+        marker=dict(line=dict(color='#ffffff', width=2)),
+        hovertemplate="<b>%{label} Sentiment</b><br>Review Count: %{value:,}<br>Percentage: %{percent}<extra></extra>"
+    )
+
+    fig.update_layout(
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.15,
+            xanchor="center",
+            x=0.5,
+            title_text=""
+        ),
+        margin=dict(t=50, b=40, l=20, r=20)
+    )
+    return apply_pbi_theme(fig)
+
+
+def plot_review_volume_by_destination(df, top_n=10):
+    """Horizontal bar chart: Top N destinations by volume of reviews with rich hover details."""
+    if df.empty or 'Place' not in df.columns:
+        fig = px.bar(title="Top 10 Destinations by Volume of Reviews")
+        fig.update_layout(xaxis_title="Number of Reviews", yaxis_title="Destination")
+        return apply_pbi_theme(fig)
+
+    dest_agg = df.groupby('Place').agg(
+        Reviews_Count=('Place', 'count'),
+        State=('State', lambda x: x.mode().iloc[0] if not x.empty else 'Unknown') if 'State' in df.columns else ('Place', lambda x: 'N/A'),
+        Avg_Rating=('Rating', 'mean') if 'Rating' in df.columns else ('Place', lambda x: np.nan)
+    ).reset_index()
+
+    dest_agg = dest_agg.sort_values(by='Reviews_Count', ascending=False).head(top_n)
+
+    dest_agg['Rating_Display'] = dest_agg['Avg_Rating'].apply(
+        lambda r: f"⭐ {r:.2f} / 5.0" if pd.notna(r) else "Rating unavailable"
+    )
+
+    fig = px.bar(
+        dest_agg,
+        x='Reviews_Count',
+        y='Place',
+        orientation='h',
+        text='Reviews_Count',
+        custom_data=['Place', 'State', 'Reviews_Count', 'Rating_Display'],
+        color='Reviews_Count',
+        color_continuous_scale=px.colors.sequential.Blues,
+        title="Top 10 Destinations by Volume of Reviews"
+    )
+
+    hovertemplate = (
+        "<b>Destination:</b> %{customdata[0]}<br>"
+        "<b>State:</b> %{customdata[1]}<br>"
+        "<b>Number of Reviews:</b> %{customdata[2]:,} reviews<br>"
+        "<b>Average Rating:</b> %{customdata[3]}<extra></extra>"
+    )
+
+    fig.update_layout(
+        yaxis=dict(autorange="reversed"),
+        xaxis_title="Number of Reviews",
+        yaxis_title="Destination",
+        coloraxis_showscale=False
+    )
+    fig.update_traces(
+        textposition='outside',
+        hovertemplate=hovertemplate
+    )
+    return apply_pbi_theme(fig)
+
+
 def generate_review_wordcloud(df):
     """Generate WordCloud image from the Review column."""
     text = " ".join(df['Review'].dropna().astype(str).tolist())

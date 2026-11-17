@@ -1,318 +1,426 @@
 """
-India Tourism Analytics and Business Intelligence Dashboard
+India Tourism Analytics & Business Intelligence Dashboard
+Python Flask Backend Server
 Academic Project for Data Visualization with Python (DVP) Laboratory
 """
 
-import streamlit as st
+import os
+import json
+import re
 import pandas as pd
-import importlib
-from streamlit_folium import st_folium
-import utils.visualizations as visualization_module
+from flask import Flask, render_template, request, jsonify, send_from_directory
 
-# Streamlit can rerun app.py with a previously imported helper module still cached.
-# Reload it when the main dashboard's newer chart helpers are missing.
-if not all(hasattr(visualization_module, name) for name in (
-    "plot_visitor_pattern_sankey",
-    "plot_destination_cost_rating",
-)):
-    importlib.reload(visualization_module)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-from utils.ui_components import (
-    apply_theme,
-    render_page_header,
-    render_kpi_card,
-    render_sidebar_filters
+from analytics.data_cleaning import (
+    get_cached_cleaned_data,
+    apply_filters,
+    DESTINATION_COORDINATES,
+    DESTINATION_DISTRICT_MAP
 )
-from utils.data_analysis import compute_executive_kpis
-from utils.insights import generate_automated_insights
-from utils.visualizations import (
-    plot_monthly_trend,
-    plot_segment_metric,
-    plot_destination_sunburst,
-    plot_visitor_pattern_sankey,
-    plot_destination_cost_rating,
-    plot_seasonal_distribution,
-    plot_recommendation_pie,
-    create_india_folium_map,
-    create_india_footfall_heatmap,
-    plot_category_by_state,
-    plot_location_type_distribution,
-    plot_age_distribution,
-    plot_gender_distribution,
-    plot_travel_group_distribution,
-    plot_age_vs_travel_heatmap,
-    plot_rating_vs_popularity_scatter,
-    plot_quality_radar,
-    plot_cost_vs_stay,
-    plot_correlation_matrix
+from analytics.tourism import (
+    get_executive_kpis,
+    get_executive_charts,
+    get_segment_metric_chart,
+    get_performance_kpis,
+    get_performance_charts
 )
-
-# Page Configuration
-st.set_page_config(
-    page_title="India Tourism Analytics | DVP Dashboard",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+from analytics.geographical import (
+    get_geographical_kpis,
+    get_destination_markers,
+    get_geographical_charts,
+    load_geojson
+)
+from analytics.demographics import (
+    get_demographics_kpis,
+    get_demographics_charts
+)
+from analytics.financial import (
+    get_financial_kpis,
+    get_financial_charts,
+    match_destinations_by_budget,
+    estimate_custom_trip_cost
+)
+from analytics.reviews import (
+    get_review_analytics,
+    search_reviews
+)
+from analytics.recommender import (
+    compute_smart_recommendations,
+    compute_destination_battle,
+    get_3d_opportunity_chart
 )
 
-# Apply Power BI Dashboard Theme
-apply_theme()
-
-# Sidebar Global Filters
-filtered_df = render_sidebar_filters()
-
-# Dashboard Control Bar
-render_page_header(
-    title="INDIA TOURISM, IN THE DATA",
-    subtitle="Explore where visitors go, how they travel, and what shapes their experience.",
-    badge="DVP LABORATORY • ACADEMIC DASHBOARD"
+app = Flask(
+    __name__,
+    template_folder="templates",
+    static_folder="static",
+    static_url_path="/static"
 )
 
-if filtered_df.empty:
-    st.warning("⚠️ No records match the active filter criteria. Please reset or adjust your sidebar filters.")
-    st.stop()
+
+def get_df_from_request():
+    """Extract filters from request body and return filtered dataframe."""
+    base_df = get_cached_cleaned_data()
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        filters = data.get("filters", data)
+        return apply_filters(base_df, filters)
+    return base_df
+
 
 # -------------------------------------------------------------
-# QUICK INTERACTIVE SLICER PRESETS (VIVA DEMO BAR)
+# FRONTEND ENTRY POINT
 # -------------------------------------------------------------
-with st.expander("⚡ Interactive Viva Slicer Presets (Click to Test Real-time Recalculations)", expanded=False):
-    p_col1, p_col2, p_col3, p_col4 = st.columns(4)
+@app.route("/")
+def index():
+    """Serve the modern single-page dashboard application."""
+    return render_template("index.html")
 
-    if p_col1.button("🎒 Solo Adventure Cohort", use_container_width=True):
-        st.session_state['filter_categories'] = ['Adventure']
-        st.session_state['filter_travel_groups'] = ['Solo']
-        st.session_state['filters_applied'] = True
-        st.rerun()
-
-    if p_col2.button("👨‍👩‍👧 Heritage Family Circuit", use_container_width=True):
-        st.session_state['filter_categories'] = ['Historical', 'Cultural']
-        st.session_state['filter_travel_groups'] = ['Family']
-        st.session_state['filters_applied'] = True
-        st.rerun()
-
-    if p_col3.button("🌴 South India Region", use_container_width=True):
-        st.session_state['filter_states'] = ['Karnataka', 'Kerala', 'Tamil Nadu']
-        st.session_state['filters_applied'] = True
-        st.rerun()
-
-    if p_col4.button("🔄 Reset All Filters", use_container_width=True):
-        for key in ['filter_states', 'filter_categories', 'filter_location_types',
-                    'filter_seasons', 'filter_months', 'filter_age_groups',
-                    'filter_genders', 'filter_travel_groups', 'filter_recommended']:
-            st.session_state[key] = []
-        st.session_state['filters_applied'] = False
-        st.rerun()
 
 # -------------------------------------------------------------
-# EXECUTIVE KPI SUMMARY METRIC CARDS
+# METADATA & FILTER OPTIONS API
 # -------------------------------------------------------------
-kpis = compute_executive_kpis(filtered_df)
+@app.route("/api/filters", methods=["GET"])
+def api_filters():
+    """Return available filter options dynamically computed from dataset."""
+    df = get_cached_cleaned_data()
+    states = sorted([str(s) for s in df['State'].dropna().unique().tolist() if s])
+    categories = sorted([str(c) for c in df['Category'].dropna().unique().tolist() if c])
+    seasons = sorted([str(s) for s in df['Season'].dropna().unique().tolist() if s])
+    travel_groups = sorted([str(g) for g in df['Travel_Group'].dropna().unique().tolist() if g])
+    destinations = sorted([str(p) for p in df['Place'].dropna().unique().tolist() if p])
 
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    render_kpi_card("Visitor Records", f"{kpis['total_records']:,}", "Current filtered sample", "#0284c7", "📊")
-with col2:
-    render_kpi_card("Destinations", f"{kpis['unique_destinations']}", "Landmarks represented", "#0d9488", "📍")
-with col3:
-    render_kpi_card("Average Rating", f"⭐ {kpis['avg_rating']}", "Out of 5", "#f59e0b", "🌟")
-with col4:
-    render_kpi_card("Advocacy Rate", f"{kpis['recommendation_pct']}%", "Recommend: Yes", "#14b8a6", "👍")
+    min_budget = int(df['Estimated_Cost_INR'].min())
+    max_budget = int(df['Estimated_Cost_INR'].max())
 
-state_counts = filtered_df['State'].value_counts()
-top_state = state_counts.index[0]
-top_state_count = int(state_counts.iloc[0])
-top_place_scores = filtered_df.groupby('Place')['Popularity_Score'].mean().sort_values(ascending=False)
-top_place = top_place_scores.index[0]
-top_place_score = float(top_place_scores.iloc[0])
-top_category_counts = filtered_df['Category'].value_counts()
-top_category = top_category_counts.index[0]
-top_category_share = float(top_category_counts.iloc[0] / len(filtered_df) * 100)
+    return jsonify({
+        "states": states,
+        "categories": categories,
+        "seasons": seasons,
+        "travel_groups": travel_groups,
+        "destinations": destinations,
+        "min_budget": min_budget,
+        "max_budget": max_budget,
+        "total_records": len(df)
+    })
 
-st.markdown("#### What stands out in this selection")
-st.info(
-    f"**{top_state}** has the most visitor records ({top_state_count:,}; "
-    f"{top_state_count / len(filtered_df) * 100:.1f}% of this sample). "
-    f"**{top_place}** has the highest average popularity score ({top_place_score:.1f}/100), "
-    f"while **{top_category}** is the largest category ({top_category_share:.1f}%). "
-    "These are descriptive patterns in the selected records."
-)
-st.caption(
-    f"Also in this selection: {kpis['total_states']} states/UTs · "
-    f"₹{int(kpis['avg_cost']):,} average estimated cost · {kpis['avg_stay']} average stay days."
-)
-
-st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# CORE ANALYTICAL DASHBOARD TABS
+# 1. EXECUTIVE OVERVIEW API
 # -------------------------------------------------------------
-tab_overview, tab_geo, tab_eda, tab_demo, tab_patterns, tab_insights = st.tabs([
-    "📊 Executive Overview",
-    "🗺️ Spatial GIS Map",
-    "🔬 Statistical EDA & Correlation",
-    "👥 Demographics & Cohorts",
-    "🧭 Visitor Patterns Lab",
-    "💡 Algorithmic Insights & Audit"
-])
+@app.route("/api/overview", methods=["POST"])
+def api_overview():
+    filtered_df = get_df_from_request()
+    kpis = get_executive_kpis(filtered_df)
+    charts = get_executive_charts(filtered_df)
 
-# -------------------------------------------------------------
-# TAB 1: EXECUTIVE OVERVIEW CHARTS
-# -------------------------------------------------------------
-with tab_overview:
-    st.markdown("#### Compare destinations and visitor segments")
-    control_dimension, control_metric = st.columns([1, 1.4])
-    with control_dimension:
-        selected_dimension = st.selectbox(
-            "Break down by",
-            ["Destination", "State", "Category", "Season", "Travel group", "Age group"],
-        )
-    with control_metric:
-        selected_metric = st.selectbox(
-            "Measure",
-            [
-                "Visitor records",
-                "Estimated footfall",
-                "Average rating",
-                "Average estimated cost (INR)",
-                "Average stay (days)",
-                "Average popularity score",
-            ],
-        )
-    st.plotly_chart(
-        plot_segment_metric(filtered_df, selected_dimension, selected_metric),
-        use_container_width=True,
-    )
-    st.caption("Counts describe records in this sample; averages and footfall use the selected dataset fields.")
+    narrative = {}
+    if not filtered_df.empty:
+        state_counts = filtered_df['State'].value_counts()
+        top_state = str(state_counts.index[0])
+        top_state_count = int(state_counts.iloc[0])
 
-    r2_c1, r2_c2 = st.columns([1.2, 1])
-    with r2_c1:
-        st.plotly_chart(plot_destination_sunburst(filtered_df), use_container_width=True)
-    with r2_c2:
-        st.plotly_chart(plot_monthly_trend(filtered_df), use_container_width=True)
+        top_places = filtered_df.groupby('Place')['Popularity_Score'].mean().sort_values(ascending=False)
+        top_place = str(top_places.index[0])
+        top_place_score = float(top_places.iloc[0])
 
-    r3_c1, r3_c2 = st.columns(2)
-    with r3_c1:
-        st.plotly_chart(plot_seasonal_distribution(filtered_df), use_container_width=True)
-    with r3_c2:
-        st.plotly_chart(plot_recommendation_pie(filtered_df), use_container_width=True)
+        cat_counts = filtered_df['Category'].value_counts()
+        top_cat = str(cat_counts.index[0])
+        top_cat_share = float(cat_counts.iloc[0] / len(filtered_df) * 100)
+
+        narrative = {
+            "top_state": top_state,
+            "top_state_count": top_state_count,
+            "top_state_pct": round(top_state_count / len(filtered_df) * 100, 1),
+            "top_place": top_place,
+            "top_place_score": round(top_place_score, 1),
+            "top_category": top_cat,
+            "top_category_share": round(top_cat_share, 1)
+        }
+
+    return jsonify({
+        "kpis": kpis,
+        "narrative": narrative,
+        "charts": charts,
+        "filtered_count": len(filtered_df)
+    })
+
+
+@app.route("/api/overview/segment-metric", methods=["POST"])
+def api_segment_metric():
+    filtered_df = get_df_from_request()
+    data = request.get_json(silent=True) or {}
+    dim = data.get("dimension", "Category")
+    metric = data.get("metric", "Visitor records")
+    chart_json = get_segment_metric_chart(filtered_df, dim, metric)
+    return jsonify({"chart": chart_json})
+
 
 # -------------------------------------------------------------
-# TAB 2: SPATIAL GIS MAPPING
+# 2. GEOGRAPHICAL ANALYSIS API
 # -------------------------------------------------------------
-with tab_geo:
-    st.markdown("""
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; margin-bottom: 12px;">
-        <span style="font-weight: 700; color: #0f172a;">📍 Pan-India Geospatial Destination Mapping</span>
-        <span style="font-size: 12px; color: #64748b; margin-left: 10px;">Interactive Folium GIS Layer with category color badges and clustered coordinates</span>
-    </div>
-    """, unsafe_allow_html=True)
+@app.route("/api/geographical", methods=["POST"])
+def api_geographical():
+    filtered_df = get_df_from_request()
+    kpis = get_geographical_kpis(filtered_df)
+    markers = get_destination_markers(filtered_df)
+    charts = get_geographical_charts(filtered_df)
+    return jsonify({
+        "kpis": kpis,
+        "markers": markers,
+        "charts": charts,
+        "filtered_count": len(filtered_df)
+    })
 
-    map_mode = st.radio(
-        "Map layer",
-        ["Destination clusters", "Estimated footfall heatmap"],
-        horizontal=True,
-        key="overview_map_mode",
-    )
-    map_obj = (
-        create_india_folium_map(filtered_df)
-        if map_mode == "Destination clusters"
-        else create_india_footfall_heatmap(filtered_df)
-    )
-    st_folium(map_obj, width=None, height=480)
-    if map_mode == "Estimated footfall heatmap":
-        st.caption("Heat intensity is weighted by estimated visitor counts at destination coordinates; smoothing is a visual aid, not measured density between sites.")
-
-    g_c1, g_c2 = st.columns(2)
-    with g_c1:
-        st.plotly_chart(plot_category_by_state(filtered_df), use_container_width=True)
-    with g_c2:
-        st.plotly_chart(plot_location_type_distribution(filtered_df), use_container_width=True)
 
 # -------------------------------------------------------------
-# TAB 3: STATISTICAL EDA & CORRELATION MATRIX
+# 3. TOURIST DEMOGRAPHICS API
 # -------------------------------------------------------------
-with tab_eda:
-    st.markdown("""
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; margin-bottom: 12px;">
-        <span style="font-weight: 700; color: #0f172a;">🔬 Statistical EDA, Multi-Variate Correlation & Benchmark Radars</span>
-        <span style="font-size: 12px; color: #64748b; margin-left: 10px;">Pearson correlations, bivariate scatter models, and quality benchmarking</span>
-    </div>
-    """, unsafe_allow_html=True)
+@app.route("/api/demographics", methods=["POST"])
+def api_demographics():
+    filtered_df = get_df_from_request()
+    kpis = get_demographics_kpis(filtered_df)
+    charts = get_demographics_charts(filtered_df)
+    return jsonify({
+        "kpis": kpis,
+        "charts": charts,
+        "filtered_count": len(filtered_df)
+    })
 
-    eda_r1_c1, eda_r1_c2 = st.columns(2)
-    with eda_r1_c1:
-        corr_fig = plot_correlation_matrix(filtered_df)
-        st.pyplot(corr_fig, use_container_width=True)
-    with eda_r1_c2:
-        st.plotly_chart(plot_quality_radar(filtered_df), use_container_width=True)
-
-    eda_r2_c1, eda_r2_c2 = st.columns(2)
-    with eda_r2_c1:
-        st.plotly_chart(plot_cost_vs_stay(filtered_df), use_container_width=True)
-    with eda_r2_c2:
-        st.plotly_chart(plot_rating_vs_popularity_scatter(filtered_df), use_container_width=True)
 
 # -------------------------------------------------------------
-# TAB 4: DEMOGRAPHICS & COHORT ANALYSIS
+# 4. TOURISM PERFORMANCE API
 # -------------------------------------------------------------
-with tab_demo:
-    demo_r1_c1, demo_r1_c2 = st.columns(2)
-    with demo_r1_c1:
-        heat_fig = plot_age_vs_travel_heatmap(filtered_df)
-        st.plotly_chart(heat_fig, use_container_width=True)
-    with demo_r1_c2:
-        st.plotly_chart(plot_age_distribution(filtered_df), use_container_width=True)
+@app.route("/api/performance", methods=["POST"])
+def api_performance():
+    filtered_df = get_df_from_request()
+    kpis = get_performance_kpis(filtered_df)
+    charts = get_performance_charts(filtered_df)
+    return jsonify({
+        "kpis": kpis,
+        "charts": charts,
+        "filtered_count": len(filtered_df)
+    })
 
-    demo_r2_c1, demo_r2_c2 = st.columns(2)
-    with demo_r2_c1:
-        st.plotly_chart(plot_travel_group_distribution(filtered_df), use_container_width=True)
-    with demo_r2_c2:
-        st.plotly_chart(plot_gender_distribution(filtered_df), use_container_width=True)
 
 # -------------------------------------------------------------
-# TAB 5: VISITOR PATTERNS & DESTINATION VALUE
+# 5. FINANCIAL ANALYSIS API
 # -------------------------------------------------------------
-with tab_patterns:
-    st.markdown("### Follow visitor segments through the sample")
-    st.caption(
-        "Each link shows how many records share two adjacent attributes. "
-        "Budget tiers are recalculated as sample-relative quartile groups (smaller selections show fewer tiers); "
-        "the flow is descriptive and does not imply a causal or chronological journey."
-    )
-    st.plotly_chart(plot_visitor_pattern_sankey(filtered_df), use_container_width=True)
+@app.route("/api/financial", methods=["POST"])
+def api_financial():
+    filtered_df = get_df_from_request()
+    kpis = get_financial_kpis(filtered_df)
+    charts = get_financial_charts(filtered_df)
+    return jsonify({
+        "kpis": kpis,
+        "charts": charts,
+        "filtered_count": len(filtered_df)
+    })
 
-    st.markdown("### Compare destination cost and experience")
-    st.caption(
-        "Each point is a destination. Bubble size shows its record count in this sample; "
-        "dashed lines mark the median destination cost and rating. Hover for details."
-    )
-    st.plotly_chart(plot_destination_cost_rating(filtered_df), use_container_width=True)
+
+@app.route("/api/financial/budget-matcher", methods=["POST"])
+def api_budget_matcher():
+    filtered_df = get_df_from_request()
+    data = request.get_json(silent=True) or {}
+    max_budget = float(data.get("max_budget", 3000))
+    result = match_destinations_by_budget(filtered_df, max_budget)
+    return jsonify(result)
+
+
+@app.route("/api/financial/cost-estimator", methods=["POST"])
+def api_cost_estimator():
+    filtered_df = get_df_from_request()
+    data = request.get_json(silent=True) or {}
+    destination = data.get("destination", "Mysore Palace")
+    num_travelers = int(data.get("num_travelers", 2))
+    trip_days = int(data.get("trip_days", 3))
+    comfort_tier = data.get("comfort_tier", "Standard (1.0x)")
+    result = estimate_custom_trip_cost(filtered_df, destination, num_travelers, trip_days, comfort_tier)
+    return jsonify(result)
+
 
 # -------------------------------------------------------------
-# TAB 6: ALGORITHMIC INSIGHTS & CLEANING AUDIT
+# 6. REVIEW ANALYTICS API
 # -------------------------------------------------------------
-with tab_insights:
-    insights = generate_automated_insights(filtered_df)
-    if insights:
-        cols_ins = st.columns(5)
-        for idx, ins in enumerate(insights[:5]):
-            with cols_ins[idx]:
-                st.markdown(f"""
-                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 12px; height: 155px; border-top: 3px solid {ins['color']};">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span style="font-size: 10px; font-weight: 700; color: {ins['color']}; text-transform: uppercase;">{ins['badge']}</span>
-                        <span>{ins['icon']}</span>
-                    </div>
-                    <div style="font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 3px;">{ins['title']}</div>
-                    <div style="font-size: 14px; font-weight: 800; color: #0284c7; margin-bottom: 4px;">{ins['value']}</div>
-                    <div style="font-size: 11px; color: #64748b; line-height: 1.35;">{ins['detail']}</div>
-                </div>
-                """, unsafe_allow_html=True)
+@app.route("/api/reviews", methods=["POST"])
+def api_reviews():
+    filtered_df = get_df_from_request()
+    result = get_review_analytics(filtered_df)
+    return jsonify(result)
 
-    st.markdown("#### 🔬 DVP Preprocessing & Data Cleaning Audit")
-    audit = st.session_state.get('audit', {})
-    a1, a2, a3, a4 = st.columns(4)
-    a1.metric("Raw Records Loaded", audit.get('initial_rows', 1000))
-    a2.metric("Features Cleaned", audit.get('final_cols', 25))
-    a3.metric("Record #1 (Munnar)", "Corrected" if audit.get('first_record_corrected') else "Raw")
-    a4.metric("Duplicates Handled", audit.get('duplicates_removed', 0))
+
+@app.route("/api/reviews/search", methods=["POST"])
+def api_reviews_search():
+    filtered_df = get_df_from_request()
+    data = request.get_json(silent=True) or {}
+    place = data.get("place", "All Destinations")
+    keyword = data.get("keyword", "")
+    reviews = search_reviews(filtered_df, place, keyword)
+    return jsonify({
+        "count": len(reviews),
+        "reviews": reviews
+    })
+
+
+# -------------------------------------------------------------
+# 7. AI RECOMMENDER & BATTLE API
+# -------------------------------------------------------------
+@app.route("/api/recommender", methods=["POST"])
+def api_recommender():
+    filtered_df = get_df_from_request()
+    data = request.get_json(silent=True) or {}
+    theme = data.get("theme", "Any Theme")
+    party = data.get("party", "Couple")
+    budget = float(data.get("budget", 3000))
+    season = data.get("season", "All Seasons")
+    recommendations = compute_smart_recommendations(filtered_df, theme, party, budget, season)
+    return jsonify({
+        "recommendations": recommendations,
+        "count": len(recommendations)
+    })
+
+
+@app.route("/api/battle", methods=["POST"])
+def api_battle():
+    filtered_df = get_df_from_request()
+    data = request.get_json(silent=True) or {}
+    dest_a = data.get("dest_a", "Mysore Palace")
+    dest_b = data.get("dest_b", "Taj Mahal")
+    battle_result = compute_destination_battle(filtered_df, dest_a, dest_b)
+    return jsonify(battle_result)
+
+
+@app.route("/api/3d-space", methods=["POST"])
+def api_3d_space():
+    filtered_df = get_df_from_request()
+    chart = get_3d_opportunity_chart(filtered_df)
+    return jsonify({"chart": chart})
+
+
+# -------------------------------------------------------------
+# 8. MAP & GEOJSON API (PAN-INDIA 3-LEVEL GIS ENGINE)
+# -------------------------------------------------------------
+_MASTER_DESTINATIONS_CACHE = None
+_INDIA_GEOJSON_CACHE = None
+
+
+def get_master_destinations():
+    """Load and cache the 5,000+ verified tourist destinations master dataset."""
+    global _MASTER_DESTINATIONS_CACHE
+    if _MASTER_DESTINATIONS_CACHE is not None:
+        return _MASTER_DESTINATIONS_CACHE
+
+    master_path = os.path.join(BASE_DIR, "data", "tourist_destinations_master.csv")
+    if not os.path.exists(master_path):
+        master_path = os.path.join(BASE_DIR, "tourist_destinations_master.csv")
+
+    if os.path.exists(master_path):
+        try:
+            df_master = pd.read_csv(master_path)
+            category_colors = {
+                "Historical": "#f97316",
+                "Heritage": "#d97706",
+                "Religious": "#8b5cf6",
+                "Nature": "#10b981",
+                "Adventure": "#ef4444",
+                "Wildlife": "#059669",
+                "Beach": "#06b6d4",
+                "Cultural": "#ec4899",
+                "Architecture": "#6366f1"
+            }
+            destinations = []
+            for _, row in df_master.iterrows():
+                cat = str(row.get("Category", "Heritage"))
+                destinations.append({
+                    "id": str(row.get("Destination_ID", "")),
+                    "place": str(row.get("Place", "")),
+                    "state": str(row.get("State", "")),
+                    "district": str(row.get("District", "")),
+                    "taluk": str(row.get("Taluk_Tehsil", "")),
+                    "address": str(row.get("Address", "")),
+                    "category": cat,
+                    "location_type": str(row.get("Location_Type", "Attraction")),
+                    "best_time": str(row.get("Best_Time_to_Visit", "All Year")),
+                    "month": str(row.get("Visit_Month", "December")),
+                    "season": str(row.get("Season", "Winter")),
+                    "rating": float(row.get("Rating", 4.5)),
+                    "cost": int(row.get("Estimated_Cost_INR", 250)),
+                    "stay": int(row.get("Stay_Days", 1)),
+                    "lat": float(row.get("Latitude", 0)),
+                    "lon": float(row.get("Longitude", 0)),
+                    "region": str(row.get("Region", "Central")),
+                    "source_org": str(row.get("Source_Organisation", "Official Portal")),
+                    "source_url": str(row.get("Source_URL", "")),
+                    "category_color": category_colors.get(cat, "#0284c7")
+                })
+            _MASTER_DESTINATIONS_CACHE = destinations
+            print(f"Loaded {len(destinations)} master tourist destinations into GIS engine cache.")
+            return destinations
+        except Exception as e:
+            print("Error loading tourist_destinations_master.csv:", e)
+
+    # Fallback to df markers
+    df = get_cached_cleaned_data()
+    return get_destination_markers(df)
+
+
+@app.route("/api/map/geojson/<region>", methods=["GET"])
+def api_geojson(region):
+    """Serve official GeoJSON data from local disk for India and all 36 States/UTs."""
+    global _INDIA_GEOJSON_CACHE
+    reg = region.lower().strip()
+    if reg in ["india", "india_states"]:
+        geo = load_geojson("india_states.geojson")
+        if geo:
+            return jsonify(geo)
+    elif reg in ["karnataka", "karnataka_districts"]:
+        geo = load_geojson("karnataka_districts.geojson")
+        if geo:
+            return jsonify(geo)
+    else:
+        # Check if local dedicated file exists matching region
+        geo = load_geojson(f"{reg}.geojson")
+        if geo:
+            return jsonify(geo)
+
+        # Dynamic extraction from all-India GeoJSON for all 36 States and Union Territories
+        if _INDIA_GEOJSON_CACHE is None:
+            _INDIA_GEOJSON_CACHE = load_geojson("india_states.geojson")
+
+        if _INDIA_GEOJSON_CACHE and "features" in _INDIA_GEOJSON_CACHE:
+            clean_target = re.sub(r'[^a-z0-9]+', '', reg)
+            matched_features = []
+            for feat in _INDIA_GEOJSON_CACHE.get("features", []):
+                st = feat.get("properties", {}).get("st_nm", "")
+                clean_st = re.sub(r'[^a-z0-9]+', '', st.lower())
+                if clean_st == clean_target or clean_st in clean_target or clean_target in clean_st:
+                    matched_features.append(feat)
+
+            if matched_features:
+                return jsonify({
+                    "type": "FeatureCollection",
+                    "features": matched_features
+                })
+
+    return jsonify({"error": f"GeoJSON for {region} not found on local disk"}), 404
+
+
+@app.route("/api/map/destinations", methods=["GET"])
+def api_map_destinations():
+    """Return verified landmark mappings and coordinates for the 3-level GIS engine."""
+    destinations = get_master_destinations()
+    return jsonify({
+        "destinations": destinations,
+        "count": len(destinations),
+        "district_map": DESTINATION_DISTRICT_MAP
+    })
+
+
+# -------------------------------------------------------------
+# SERVER EXECUTION
+# -------------------------------------------------------------
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    print(f"Starting India Tourism Analytics Flask Server on http://127.0.0.1:{port}")
+    app.run(host="0.0.0.0", port=port, debug=True)

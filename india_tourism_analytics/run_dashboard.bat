@@ -1,17 +1,14 @@
 @echo off
-title India Tourism Analytics Dashboard
+title India Tourism Analytics & BI Web Application
 echo =====================================================================
 echo  INDIA TOURISM ANALYTICS AND BUSINESS INTELLIGENCE DASHBOARD
+echo  Modern Web Application (HTML5, CSS3, JavaScript, Leaflet & Python Flask)
 echo  Course: Data Visualization with Python (DVP) Laboratory
 echo =====================================================================
 echo.
-echo Launching Streamlit application at http://localhost:8501 ...
+echo Launching Flask Web Application at http://127.0.0.1:5000 ...
 echo.
 
-if exist "%LOCALAPPDATA%\Programs\Python\Python311\Scripts\streamlit.exe" (
-    "%LOCALAPPDATA%\Programs\Python\Python311\Scripts\streamlit.exe" run app.py
-) else (
-    python -m streamlit run app.py
-)
+python app.py
 
 pause

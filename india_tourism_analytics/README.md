@@ -81,9 +81,9 @@ dvp/
 │   ├── 3_Tourist_Demographics.py      # Age, gender & travel cohort heatmaps
 │   ├── 4_Tourism_Performance.py       # Ratings, popularity & quality benchmarks
 │   ├── 5_Financial_Analysis.py        # Expense modeling & budget simulator
-│   ├── 6_Review_Analytics.py          # NLP WordClouds & VADER sentiment engine
-│   ├── 7_Exploratory_Data_Analysis.py # Statistical EDA, IQR outliers & correlation
-│   └── 8_Data_Explorer.py             # Data table, filters & Power BI exports
+│   ├── 6_Review_Analytics.py          # NLP text analytics & VADER sentiment engine
+│   ├── 7_AI_Recommender_&_Battle.py   # MCDA trip matcher, destination battle & 3D space
+│   └── 8_Map.py                       # 3-level Leaflet GIS map: India ➔ Districts ➔ Places
 ├── utils/
 │   ├── data_cleaning.py               # Preprocessing & imputation routines
 │   ├── data_analysis.py               # Statistical aggregations & metrics

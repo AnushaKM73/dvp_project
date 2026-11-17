@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>India Tourism Analytics & Business Intelligence</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Custom Application CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    
+    <!-- Leaflet.js -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+</head>
+<body>
+    <div class="dashboard-wrapper">
+        
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                </div>
+                <div class="brand-text">
+                    <h2>INDIA TOURISM BI</h2>
+                    <span>Analytics & GIS Intelligence</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-label">MAIN DASHBOARDS</div>
+                <ul>
+                    <li>
+                        <a href="#overview" class="nav-item active" data-section="overview">
+                            <i class="fa-solid fa-chart-line"></i>
+                            <span>Executive Overview</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#geographical" class="nav-item" data-section="geographical">
+                            <i class="fa-solid fa-earth-asia"></i>
+                            <span>Geographical Analysis</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#demographics" class="nav-item" data-section="demographics">
+                            <i class="fa-solid fa-users"></i>
+                            <span>Tourist Demographics</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#performance" class="nav-item" data-section="performance">
+                            <i class="fa-solid fa-star"></i>
+                            <span>Tourism Performance</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#financial" class="nav-item" data-section="financial">
+                            <i class="fa-solid fa-wallet"></i>
+                            <span>Financial Analysis</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#reviews" class="nav-item" data-section="reviews">
+                            <i class="fa-solid fa-comments"></i>
+                            <span>Review Analytics</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#recommender" class="nav-item" data-section="recommender">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>AI Recommender & Battle</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#map" class="nav-item" data-section="map">
+                            <i class="fa-solid fa-compass"></i>
+                            <span>Hierarchical GIS Map</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- GLOBAL SIDEBAR FILTERS -->
+            <div class="sidebar-filters">
+                <div class="filter-header">
+                    <span><i class="fa-solid fa-sliders"></i> Global Slicers</span>
+                    <span class="badge-count" id="badge-record-count">1,000</span>
+                </div>
+
+                <div class="filter-group">
+                    <label for="filter-state">State Filter</label>
+                    <select id="filter-state">
+                        <option value="All">All States (National)</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="filter-category">Tourism Category</label>
+                    <select id="filter-category">
+                        <option value="All">All Categories</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="filter-season">Travel Season</label>
+                    <select id="filter-season">
+                        <option value="All">All Seasons</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="filter-group">Travel Group Persona</label>
+                    <select id="filter-group">
+                        <option value="All">All Personas</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <div class="slider-label-row">
+                        <label for="filter-rating">Min Rating (⭐)</label>
+                        <span id="label-rating-val">1.0</span>
+                    </div>
+                    <input type="range" id="filter-rating" min="1.0" max="5.0" step="0.1" value="1.0">
+                </div>
+
+                <div class="filter-buttons">
+                    <button class="btn btn-primary btn-block" id="btn-apply-filters">
+                        <i class="fa-solid fa-check"></i> Apply Filters
+                    </button>
+                    <button class="btn btn-secondary btn-block" id="btn-reset-filters">
+                        <i class="fa-solid fa-rotate-left"></i> Reset All
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="main-content">
+            <!-- TOP BAR -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="btn-toggle-sidebar" id="toggle-sidebar">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="header-titles">
+                        <h1 id="page-title">Executive Overview Dashboard</h1>
+                        <p id="page-subtitle">High-level tourism performance, geographical volume, category mix, and seasonal patterns</p>
+                    </div>
+                </div>
+                <div class="topbar-right">
+                    <span class="academic-badge">
+                        <i class="fa-solid fa-graduation-cap"></i> DVP LABORATORY • ACADEMIC WEB APP
+                    </span>
+                </div>
+            </header>
+
+            <!-- VIVA QUICK PRESET BAR -->
+            <section class="viva-preset-bar">
+                <div class="preset-label">
+                    <i class="fa-solid fa-bolt"></i> Real-time Slicer Presets:
+                </div>
+                <div class="preset-buttons">
+                    <button class="preset-pill" data-preset="solo-adventure">
+                        🎒 Solo Adventure
+                    </button>
+                    <button class="preset-pill" data-preset="heritage-family">
+                        👨‍👩‍👧 Heritage Family
+                    </button>
+                    <button class="preset-pill" data-preset="south-india">
+                        🌴 South India Region
+                    </button>
+                    <button class="preset-pill preset-reset" data-preset="reset">
+                        🔄 Clear Presets
+                    </button>
+                </div>
+            </section>
+
+            <!-- ======================================================== -->
+            <!-- 1. EXECUTIVE OVERVIEW SECTION -->
+            <!-- ======================================================== -->
+            <section id="section-overview" class="dashboard-section active">
+                <div class="kpi-grid kpi-7">
+                    <div class="kpi-card" style="--kpi-accent: #0284c7;">
+                        <div class="kpi-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Total Records</span>
+                            <h3 class="kpi-value" id="kpi-total-records">1,000</h3>
+                            <span class="kpi-subtitle">Visitor logs</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #0d9488;">
+                        <div class="kpi-icon"><i class="fa-solid fa-map"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Total States</span>
+                            <h3 class="kpi-value" id="kpi-total-states">16</h3>
+                            <span class="kpi-subtitle">Pan-India presence</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #6366f1;">
+                        <div class="kpi-icon"><i class="fa-solid fa-location-dot"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Destinations</span>
+                            <h3 class="kpi-value" id="kpi-total-dest">20</h3>
+                            <span class="kpi-subtitle">Iconic landmarks</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #f59e0b;">
+                        <div class="kpi-icon"><i class="fa-solid fa-star"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Avg Rating</span>
+                            <h3 class="kpi-value" id="kpi-avg-rating">⭐ 4.48</h3>
+                            <span class="kpi-subtitle">Satisfaction (0-5)</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #10b981;">
+                        <div class="kpi-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Avg Cost</span>
+                            <h3 class="kpi-value" id="kpi-avg-cost">₹2,446</h3>
+                            <span class="kpi-subtitle">Estimated budget</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #ec4899;">
+                        <div class="kpi-icon"><i class="fa-solid fa-clock"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Avg Stay</span>
+                            <h3 class="kpi-value" id="kpi-avg-stay">3.9 Days</h3>
+                            <span class="kpi-subtitle">Trip duration</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #14b8a6;">
+                        <div class="kpi-icon"><i class="fa-solid fa-thumbs-up"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Recommended</span>
+                            <h3 class="kpi-value" id="kpi-recommendation-pct">75.5%</h3>
+                            <span class="kpi-subtitle">Advocacy rate</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NARRATIVE CALLOUT -->
+                <div class="narrative-banner" id="overview-narrative">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <div class="narrative-text" id="overview-narrative-content">
+                        Loading executive narrative summary...
+                    </div>
+                </div>
+
+                <!-- SEGMENT EXPLORER -->
+                <div class="card mb-4">
+                    <div class="card-header flex-between">
+                        <div>
+                            <h4>Compare Destinations and Visitor Segments</h4>
+                            <span class="text-muted">Dynamic metric breakdown across selected cohort dimensions</span>
+                        </div>
+                        <div class="explorer-controls">
+                            <div class="control-item">
+                                <label>Break down by</label>
+                                <select id="explorer-dimension">
+                                    <option value="Category">Category</option>
+                                    <option value="Destination">Destination</option>
+                                    <option value="State">State</option>
+                                    <option value="Season">Season</option>
+                                    <option value="Travel group">Travel group</option>
+                                    <option value="Age group">Age group</option>
+                                </select>
+                            </div>
+                            <div class="control-item">
+                                <label>Measure</label>
+                                <select id="explorer-metric">
+                                    <option value="Visitor records">Visitor records</option>
+                                    <option value="Estimated footfall">Estimated footfall</option>
+                                    <option value="Average rating">Average rating</option>
+                                    <option value="Average estimated cost (INR)">Average estimated cost (INR)</option>
+                                    <option value="Average stay (days)">Average stay (days)</option>
+                                    <option value="Average popularity score">Average popularity score</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="chart-segment-metric" class="chart-container" style="height: 360px;"></div>
+                    </div>
+                </div>
+
+                <!-- ROW 1: STATE VOLUME & TOP DESTINATIONS -->
+                <div class="grid grid-2 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-state-volume" class="chart-container" style="height: 380px;"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-top-destinations" class="chart-container" style="height: 380px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROW 2: CATEGORY DONUT & MONTHLY TREND -->
+                <div class="grid grid-2 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-category-donut" class="chart-container" style="height: 360px;"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-monthly-trend" class="chart-container" style="height: 360px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROW 3: SEASONAL & RECOMMENDATION -->
+                <div class="grid grid-2 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-seasonal-distribution" class="chart-container" style="height: 350px;"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-recommendation-pie" class="chart-container" style="height: 350px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ======================================================== -->
+            <!-- 2. GEOGRAPHICAL ANALYSIS SECTION -->
+            <!-- ======================================================== -->
+            <section id="section-geographical" class="dashboard-section">
+                <div class="kpi-grid kpi-4">
+                    <div class="kpi-card" style="--kpi-accent: #0284c7;">
+                        <div class="kpi-icon"><i class="fa-solid fa-map-location"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Total States Covered</span>
+                            <h3 class="kpi-value" id="geo-kpi-states">16</h3>
+                            <span class="kpi-subtitle">National footprint</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #10b981;">
+                        <div class="kpi-icon"><i class="fa-solid fa-landmark"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Tourist Destinations</span>
+                            <h3 class="kpi-value" id="geo-kpi-dest">20</h3>
+                            <span class="kpi-subtitle">Mapped locations</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #6366f1;">
+                        <div class="kpi-icon"><i class="fa-solid fa-ranking-star"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Most Represented State</span>
+                            <h3 class="kpi-value" id="geo-kpi-top-state">Karnataka</h3>
+                            <span class="kpi-subtitle" id="geo-kpi-top-state-sub">144 records (14.4%)</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #f97316;">
+                        <div class="kpi-icon"><i class="fa-solid fa-compass"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Top Tourism Category</span>
+                            <h3 class="kpi-value" id="geo-kpi-top-cat">Historical</h3>
+                            <span class="kpi-subtitle" id="geo-kpi-top-cat-sub">383 records (38.3%)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MAP CONTAINER -->
+                <div class="card mb-4">
+                    <div class="card-header flex-between">
+                        <div>
+                            <h4>📍 Interactive Pan-India Geospatial Tourism Destination Map</h4>
+                            <span class="text-muted">High-contrast Leaflet GIS vector map with category-coded destination pins</span>
+                        </div>
+                        <div class="map-legend">
+                            <span class="legend-item"><span class="legend-dot" style="background:#10b981;"></span> Nature</span>
+                            <span class="legend-item"><span class="legend-dot" style="background:#f97316;"></span> Cultural</span>
+                            <span class="legend-item"><span class="legend-dot" style="background:#6366f1;"></span> Historical</span>
+                            <span class="legend-item"><span class="legend-dot" style="background:#06b6d4;"></span> Beach</span>
+                            <span class="legend-item"><span class="legend-dot" style="background:#e11d48;"></span> Adventure</span>
+                        </div>
+                    </div>
+                    <div class="card-body no-padding">
+                        <div id="geographical-map" style="height: 560px; width: 100%; border-radius: 0 0 10px 10px;"></div>
+                    </div>
+                </div>
+
+                <!-- GEOGRAPHICAL CHARTS -->
+                <div class="grid grid-2 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-geo-top-states" class="chart-container" style="height: 380px;"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-geo-cat-state" class="chart-container" style="height: 380px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div id="chart-geo-location-types" class="chart-container" style="height: 340px;"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ======================================================== -->
+            <!-- 3. TOURIST DEMOGRAPHICS SECTION -->
+            <!-- ======================================================== -->
+            <section id="section-demographics" class="dashboard-section">
+                <div class="kpi-grid kpi-4">
+                    <div class="kpi-card" style="--kpi-accent: #0284c7;">
+                        <div class="kpi-icon"><i class="fa-solid fa-bullseye"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Dominant Age Cohort</span>
+                            <h3 class="kpi-value" id="demo-kpi-age">26-35</h3>
+                            <span class="kpi-subtitle" id="demo-kpi-age-sub">342 travelers (34.2%)</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #0d9488;">
+                        <div class="kpi-icon"><i class="fa-solid fa-user-group"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Primary Travel Style</span>
+                            <h3 class="kpi-value" id="demo-kpi-group">Couple</h3>
+                            <span class="kpi-subtitle" id="demo-kpi-group-sub">285 bookings (28.5%)</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #6366f1;">
+                        <div class="kpi-icon"><i class="fa-solid fa-venus-mars"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Leading Gender Group</span>
+                            <h3 class="kpi-value" id="demo-kpi-gender">Male</h3>
+                            <span class="kpi-subtitle" id="demo-kpi-gender-sub">512 respondents (51.2%)</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #f97316;">
+                        <div class="kpi-icon"><i class="fa-solid fa-person-walking-luggage"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Solo Travel Ratio</span>
+                            <h3 class="kpi-value" id="demo-kpi-solo">18.4%</h3>
+                            <span class="kpi-subtitle">Independent travelers</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-demo-age" class="chart-container" style="height: 360px;"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-demo-gender" class="chart-container" style="height: 360px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-demo-group" class="chart-container" style="height: 360px;"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-demo-heatmap" class="chart-container" style="height: 360px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ======================================================== -->
+            <!-- 4. TOURISM PERFORMANCE SECTION -->
+            <!-- ======================================================== -->
+            <section id="section-performance" class="dashboard-section">
+                <div class="kpi-grid kpi-4">
+                    <div class="kpi-card" style="--kpi-accent: #10b981;">
+                        <div class="kpi-icon"><i class="fa-solid fa-award"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Top Rated Landmark</span>
+                            <h3 class="kpi-value" id="perf-kpi-top-rated">Mysore Palace</h3>
+                            <span class="kpi-subtitle" id="perf-kpi-top-rated-sub">⭐ 4.65/5.0 (Karnataka)</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #f97316;">
+                        <div class="kpi-icon"><i class="fa-solid fa-fire"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Most Popular Place</span>
+                            <h3 class="kpi-value" id="perf-kpi-most-pop">Taj Mahal</h3>
+                            <span class="kpi-subtitle" id="perf-kpi-most-pop-sub">Score: 92.4/100</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #0284c7;">
+                        <div class="kpi-icon"><i class="fa-solid fa-pump-soap"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Avg Cleanliness Index</span>
+                            <h3 class="kpi-value" id="perf-kpi-clean">3.85 / 5.0</h3>
+                            <span class="kpi-subtitle">Sanitation benchmark</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #0d9488;">
+                        <div class="kpi-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Avg Safety Index</span>
+                            <h3 class="kpi-value" id="perf-kpi-safety">4.12 / 5.0</h3>
+                            <span class="kpi-subtitle">Security standard</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-perf-scatter" class="chart-container" style="height: 400px;"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-perf-radar" class="chart-container" style="height: 400px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>📋 National Destination Performance & Quality Rankings</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="data-table" id="table-performance-rankings">
+                                <thead>
+                                    <tr>
+                                        <th>Destination</th>
+                                        <th>State</th>
+                                        <th>Category</th>
+                                        <th>Rating (⭐)</th>
+                                        <th>Popularity</th>
+                                        <th>Cleanliness</th>
+                                        <th>Safety</th>
+                                        <th>Accessibility</th>
+                                        <th>Advocacy %</th>
+                                        <th>Sample Records</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ======================================================== -->
+            <!-- 5. FINANCIAL ANALYSIS SECTION -->
+            <!-- ======================================================== -->
+            <section id="section-financial" class="dashboard-section">
+                <div class="kpi-grid kpi-4">
+                    <div class="kpi-card" style="--kpi-accent: #0284c7;">
+                        <div class="kpi-icon"><i class="fa-solid fa-credit-card"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Average Estimated Cost</span>
+                            <h3 class="kpi-value" id="fin-kpi-avg-cost">₹2,446</h3>
+                            <span class="kpi-subtitle">Overall mean per record</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #10b981;">
+                        <div class="kpi-icon"><i class="fa-solid fa-tag"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Lowest Recorded Cost</span>
+                            <h3 class="kpi-value" id="fin-kpi-min-cost">₹850</h3>
+                            <span class="kpi-subtitle">Minimum budget package</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #ec4899;">
+                        <div class="kpi-icon"><i class="fa-solid fa-gem"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Highest Recorded Cost</span>
+                            <h3 class="kpi-value" id="fin-kpi-max-cost">₹4,980</h3>
+                            <span class="kpi-subtitle">Maximum premium spend</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #f97316;">
+                        <div class="kpi-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Daily Expenditure</span>
+                            <h3 class="kpi-value" id="fin-kpi-daily-burn">₹627 / day</h3>
+                            <span class="kpi-subtitle" id="fin-kpi-daily-burn-sub">Based on 3.9 days avg stay</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-fin-cat-cost" class="chart-container" style="height: 380px;"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-fin-state-cost" class="chart-container" style="height: 380px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div id="chart-fin-cost-vs-stay" class="chart-container" style="height: 380px;"></div>
+                    </div>
+                </div>
+
+                <!-- CATEGORY COST EXTREMES TABLE -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>📋 Tourism Category Cost Extremes (Empirical Baseline)</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="data-table" id="table-category-extremes">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Min Cost (₹)</th>
+                                        <th>Average Cost (₹)</th>
+                                        <th>Median Cost (₹)</th>
+                                        <th>Max Cost (₹)</th>
+                                        <th>Sample Size</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INTERACTIVE BUDGET MATCHER -->
+                <div class="interactive-panel mb-4" style="border-top: 4px solid #10b981;">
+                    <div class="panel-header">
+                        <h3><i class="fa-solid fa-bullseye"></i> Interactive Destination Budget Matcher</h3>
+                        <p>Slide or enter your maximum ceiling budget in INR to dynamically discover matching Indian destinations.</p>
+                    </div>
+                    <div class="budget-matcher-controls">
+                        <div class="slider-wrapper">
+                            <div class="flex-between mb-2">
+                                <label for="budget-matcher-slider"><strong>Maximum Budget Threshold (INR)</strong></label>
+                                <span class="badge-accent" id="budget-matcher-val">₹3,000</span>
+                            </div>
+                            <input type="range" id="budget-matcher-slider" min="800" max="5000" step="100" value="3000">
+                        </div>
+                        <div class="budget-match-summary" id="budget-match-summary">
+                            <div class="match-stat-box green">
+                                <div class="stat-title">MATCHING DESTINATIONS</div>
+                                <div class="stat-number" id="budget-matched-count">14 Places</div>
+                                <div class="stat-sub" id="budget-matched-sub">Within ₹3,000 budget</div>
+                            </div>
+                            <div class="match-stat-box blue">
+                                <div class="stat-title">MOST AFFORDABLE MATCH</div>
+                                <div class="stat-number" id="budget-cheapest-place">Mysore Palace</div>
+                                <div class="stat-sub" id="budget-cheapest-cost">Avg cost: ₹1,560</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive mt-3">
+                        <table class="data-table" id="table-budget-results">
+                            <thead>
+                                <tr>
+                                    <th>Destination</th>
+                                    <th>State</th>
+                                    <th>Category</th>
+                                    <th>Average Cost (₹)</th>
+                                    <th>Min (₹)</th>
+                                    <th>Max (₹)</th>
+                                    <th>Rating (⭐)</th>
+                                    <th>Avg Stay (Days)</th>
+                                    <th>Sample Trips</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- INTERACTIVE CUSTOM TRIP COST ESTIMATOR -->
+                <div class="interactive-panel mb-4" style="border-top: 4px solid #0284c7;">
+                    <div class="panel-header">
+                        <h3><i class="fa-solid fa-calculator"></i> Interactive Custom Trip Cost Estimator</h3>
+                        <p>Model customized trip budgets by selecting a destination, party size, duration, and comfort tier based on empirical dataset averages.</p>
+                    </div>
+                    <div class="estimator-form">
+                        <div class="form-row">
+                            <div class="form-col">
+                                <label for="estimator-destination">Destination</label>
+                                <select id="estimator-destination">
+                                    <!-- Populated via JS -->
+                                </select>
+                            </div>
+                            <div class="form-col">
+                                <label for="estimator-travelers">Number of Travelers</label>
+                                <input type="number" id="estimator-travelers" min="1" max="25" value="2">
+                            </div>
+                            <div class="form-col">
+                                <label for="estimator-days">Trip Duration (Days)</label>
+                                <input type="number" id="estimator-days" min="1" max="30" value="3">
+                            </div>
+                            <div class="form-col">
+                                <label for="estimator-tier">Comfort Tier</label>
+                                <select id="estimator-tier">
+                                    <option value="Budget (0.7x)">Budget (0.7x) - Hostels & Transit</option>
+                                    <option value="Standard (1.0x)" selected>Standard (1.0x) - 3-Star & Cabs</option>
+                                    <option value="Premium / Luxury (1.8x)">Premium / Luxury (1.8x) - 5-Star & Private</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- RESULT CARD -->
+                        <div class="estimator-result-card" id="estimator-result">
+                            <div class="result-main">
+                                <div>
+                                    <span class="result-label">PROJECTED TOTAL TRIP EXPENSE</span>
+                                    <h2 class="result-number" id="est-total-cost">₹14,676</h2>
+                                    <p class="result-sub" id="est-desc">For 2 traveler(s) for 3 day(s) at Mysore Palace (Standard 1.0x)</p>
+                                </div>
+                                <div class="result-breakdown">
+                                    <div class="breakdown-item">
+                                        <span class="b-label">COST PER PERSON</span>
+                                        <span class="b-val" id="est-cost-per-person">₹7,338</span>
+                                    </div>
+                                    <div class="breakdown-item">
+                                        <span class="b-label">DAILY EXPENSE PER PERSON</span>
+                                        <span class="b-val green" id="est-daily-per-person">₹2,446/day</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="result-methodology">
+                                <strong>📐 Estimation Methodology:</strong>
+                                <ul>
+                                    <li><b>Empirical Destination Baseline:</b> Computed from recorded visits for the destination in the dataset.</li>
+                                    <li><b>Comfort Multipliers:</b> Budget (0.7×), Standard (1.0×), and Premium / Luxury (1.8×).</li>
+                                    <li><b>Formula:</b> Total = (Daily Rate Baseline × Duration × Multiplier) × Number of Travelers.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ======================================================== -->
+            <!-- 6. REVIEW ANALYTICS SECTION -->
+            <!-- ======================================================== -->
+            <section id="section-reviews" class="dashboard-section">
+                <div class="kpi-grid kpi-4">
+                    <div class="kpi-card" style="--kpi-accent: #0284c7;">
+                        <div class="kpi-icon"><i class="fa-solid fa-comment-dots"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Total Review Records</span>
+                            <h3 class="kpi-value" id="rev-kpi-total">1,000</h3>
+                            <span class="kpi-subtitle">Active sample</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #10b981;">
+                        <div class="kpi-icon"><i class="fa-solid fa-face-smile"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Positive Sentiment</span>
+                            <h3 class="kpi-value" id="rev-kpi-pos">82.4%</h3>
+                            <span class="kpi-subtitle" id="rev-kpi-pos-sub">824 reviews (≥ +0.05)</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #6366f1;">
+                        <div class="kpi-icon"><i class="fa-solid fa-face-meh"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Neutral Sentiment</span>
+                            <h3 class="kpi-value" id="rev-kpi-neu">17.6%</h3>
+                            <span class="kpi-subtitle" id="rev-kpi-neu-sub">176 reviews (-0.05 to +0.05)</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="--kpi-accent: #ef4444;">
+                        <div class="kpi-icon"><i class="fa-solid fa-face-frown"></i></div>
+                        <div class="kpi-body">
+                            <span class="kpi-title">Negative Sentiment</span>
+                            <h3 class="kpi-value" id="rev-kpi-neg">0.0%</h3>
+                            <span class="kpi-subtitle" id="rev-kpi-neg-sub">0 reviews (≤ -0.05)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-rev-words" class="chart-container" style="height: 380px;"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chart-rev-sentiment" class="chart-container" style="height: 380px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div id="chart-rev-top-dest" class="chart-container" style="height: 350px;"></div>
+                    </div>
+                </div>
+
+                <!-- INTERACTIVE REVIEW EXPLORER -->
+                <div class="interactive-panel mb-4" style="border-top: 4px solid #0284c7;">
+                    <div class="panel-header">
+                        <h3><i class="fa-solid fa-magnifying-glass"></i> Interactive Tourist Review Explorer</h3>
+                        <p>Filter by destination or search specific visitor keywords (e.g. 'pleasant', 'crowded', 'photography', 'clean').</p>
+                    </div>
+                    <div class="review-search-bar">
+                        <div class="search-col-1">
+                            <label for="review-dest-filter">Filter by Destination</label>
+                            <select id="review-dest-filter">
+                                <option value="All Destinations">All Destinations</option>
+                            </select>
+                        </div>
+                        <div class="search-col-2">
+                            <label for="review-keyword-input">Keyword Search</label>
+                            <div class="search-input-wrapper">
+                                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                                <input type="text" id="review-keyword-input" placeholder="Type keyword to filter review transcripts...">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-between mt-3 mb-2">
+                        <span class="text-muted"><strong id="reviews-matched-count">100</strong> matching reviews displayed</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-review-explorer">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Destination</th>
+                                    <th>State</th>
+                                    <th>Rating (⭐)</th>
+                                    <th>Sentiment</th>
+                                    <th>VADER Compound</th>
+                                    <th>Tourist Review Transcript</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ======================================================== -->
+            <!-- 7. AI RECOMMENDER & BATTLE SECTION -->
+            <!-- ======================================================== -->
+            <section id="section-recommender" class="dashboard-section">
+                <!-- SUB-TABS -->
+                <div class="sub-tab-bar mb-4">
+                    <button class="sub-tab-btn active" data-subtab="mcda">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> 🤖 Smart Destination Matcher (MCDA)
+                    </button>
+                    <button class="sub-tab-btn" data-subtab="battle">
+                        <i class="fa-solid fa-hand-fist"></i> ⚔️ Head-to-Head Destination Battle
+                    </button>
+                    <button class="sub-tab-btn" data-subtab="3d">
+                        <i class="fa-solid fa-cube"></i> 🌐 3D Interactive Tourism Space
+                    </button>
+                </div>
+
+                <!-- SUBTAB 1: MCDA MATCH -->
+                <div id="subtab-mcda" class="subtab-content active">
+                    <div class="interactive-panel mb-4" style="border-top: 4px solid #0284c7;">
+                        <div class="panel-header">
+                            <h3>🎯 Algorithmic Multi-Criteria Destination Recommender</h3>
+                            <p>Customize your travel preferences to compute algorithmic match scores across all 20 Indian destinations based on category affinity, budget viability, and historical cohort satisfaction.</p>
+                        </div>
+                        <div class="mcda-form">
+                            <div class="form-row">
+                                <div class="form-col">
+                                    <label for="mcda-theme">Preferred Theme</label>
+                                    <select id="mcda-theme">
+                                        <option value="Any Theme">Any Theme</option>
+                                        <option value="Nature">Nature</option>
+                                        <option value="Historical">Historical</option>
+                                        <option value="Cultural">Cultural</option>
+                                        <option value="Beach">Beach</option>
+                                        <option value="Adventure">Adventure</option>
+                                    </select>
+                                </div>
+                                <div class="form-col">
+                                    <label for="mcda-party">Travel Group Persona</label>
+                                    <select id="mcda-party">
+                                        <option value="Couple">Couple</option>
+                                        <option value="Family">Family</option>
+                                        <option value="Friends">Friends</option>
+                                        <option value="Solo">Solo</option>
+                                    </select>
+                                </div>
+                                <div class="form-col">
+                                    <label for="mcda-budget">Target Budget Ceiling (INR): <span id="mcda-budget-label">₹3,000</span></label>
+                                    <input type="range" id="mcda-budget" min="1000" max="5000" step="250" value="3000">
+                                </div>
+                                <div class="form-col">
+                                    <label for="mcda-season">Target Season</label>
+                                    <select id="mcda-season">
+                                        <option value="All Seasons">All Seasons</option>
+                                        <option value="Winter">Winter</option>
+                                        <option value="Summer">Summer</option>
+                                        <option value="Monsoon">Monsoon</option>
+                                        <option value="Spring">Spring</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TOP 3 MEDAL CARDS -->
+                        <div class="top-medal-grid mb-4" id="mcda-medal-grid">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+
+                        <!-- FULL RANKINGS TABLE -->
+                        <div class="table-responsive">
+                            <table class="data-table" id="table-mcda-rankings">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Destination</th>
+                                        <th>State</th>
+                                        <th>Category</th>
+                                        <th>Match Score</th>
+                                        <th>Avg Rating</th>
+                                        <th>Avg Cost (₹)</th>
+                                        <th>Avg Stay</th>
+                                        <th>Popularity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUBTAB 2: DESTINATION BATTLE -->
+                <div id="subtab-battle" class="subtab-content">
+                    <div class="interactive-panel mb-4" style="border-top: 4px solid #f97316;">
+                        <div class="panel-header">
+                            <h3>⚔️ Head-to-Head Destination Battle Engine</h3>
+                            <p>Select any two destinations to generate a direct side-by-side comparative analysis with radar benchmarks.</p>
+                        </div>
+                        <div class="battle-selectors mb-4">
+                            <div class="battle-dest-card blue">
+                                <label for="battle-dest-a"><strong>Destination A (Blue Team)</strong></label>
+                                <select id="battle-dest-a" class="battle-select"></select>
+                            </div>
+                            <div class="battle-vs-badge">VS</div>
+                            <div class="battle-dest-card orange">
+                                <label for="battle-dest-b"><strong>Destination B (Orange Team)</strong></label>
+                                <select id="battle-dest-b" class="battle-select"></select>
+                            </div>
+                        </div>
+
+                        <!-- WINNER BANNER -->
+                        <div class="battle-verdict-banner" id="battle-verdict-banner">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+
+                        <div class="grid grid-2 mt-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div id="chart-battle-radar" class="chart-container" style="height: 420px;"></div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4>Attribute-by-Attribute Scorecard</h4>
+                                </div>
+                                <div class="card-body">
+                                    <table class="data-table" id="table-battle-scorecard">
+                                        <thead>
+                                            <tr>
+                                                <th>Attribute</th>
+                                                <th id="th-battle-a">Destination A</th>
+                                                <th id="th-battle-b">Destination B</th>
+                                                <th>Verdict</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Populated dynamically via JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUBTAB 3: 3D OPPORTUNITY SPACE -->
+                <div id="subtab-3d" class="subtab-content">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h4>🌐 3D Interactive Tourism Space (Satisfaction vs. Popularity vs. Budget)</h4>
+                            <span class="text-muted">Drag to rotate 3D axes, scroll to zoom, hover to inspect multi-attribute values</span>
+                        </div>
+                        <div class="card-body">
+                            <div id="chart-3d-space" class="chart-container" style="height: 540px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ======================================================== -->
+            <!-- 8. HIERARCHICAL GIS MAP SECTION -->
+            <!-- ======================================================== -->
+            <section id="section-map" class="dashboard-section">
+                <div class="card mb-4">
+                    <div class="card-header flex-between">
+                        <div>
+                            <h4 id="hierarchical-map-title">🗺️ India Interactive Tourism Explorer</h4>
+                            <p class="text-muted" id="hierarchical-map-desc">Click a state to explore its districts.</p>
+                        </div>
+                        <div class="map-nav-controls">
+                            <button class="btn btn-secondary btn-sm" id="btn-back-to-india" style="display:none;">
+                                <i class="fa-solid fa-arrow-left"></i> ← Back to India
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="btn-back-to-state" style="display:none;">
+                                <i class="fa-solid fa-arrow-left"></i> ← Back to State
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- BREADCRUMBS -->
+                    <div class="map-breadcrumb-bar">
+                        <span class="breadcrumb-item" id="bc-india"><i class="fa-solid fa-flag"></i> India</span>
+                        <span class="breadcrumb-separator" id="bc-sep-state" style="display:none;">❯</span>
+                        <span class="breadcrumb-item" id="bc-state" style="display:none;">State</span>
+                        <span class="breadcrumb-separator" id="bc-sep-dist" style="display:none;">❯</span>
+                        <span class="breadcrumb-item active" id="bc-dist" style="display:none;">District</span>
+                    </div>
+
+                    <div class="card-body no-padding" style="position: relative;">
+                        <!-- MAP CANVAS -->
+                        <div id="hierarchical-leaflet-map" style="height: 640px; width: 100%; background: #f8fafc;"></div>
+                        
+                        <!-- BOTTOM SELECTION STATUS BADGE -->
+                        <div class="map-selection-badge" id="map-selection-pill">
+                            Selected: <strong id="map-pill-name">India</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DISTRICT DESTINATIONS DETAILS PANEL (LEVEL 3) -->
+                <div class="card mb-4" id="district-places-panel" style="display:none;">
+                    <div class="card-header flex-between">
+                        <h4 id="district-places-title">📍 Verified Tourist Places in Mysore District</h4>
+                        <span class="badge-accent" id="district-places-count">1 Landmark</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="district-places-cards" class="places-grid">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- APPLICATION SCRIPTS -->
+    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
+

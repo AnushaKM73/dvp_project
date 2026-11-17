@@ -19,8 +19,9 @@ from utils.ui_components import (
     render_sidebar_filters
 )
 from utils.visualizations import (
-    generate_review_wordcloud,
-    get_top_review_words,
+    plot_top_review_words,
+    plot_sentiment_doughnut,
+    plot_review_volume_by_destination,
     apply_pbi_theme
 )
 
@@ -35,7 +36,11 @@ filtered_df = render_sidebar_filters()
 
 render_page_header(
     title="Tourist Review & Text Analytics",
-    subtitle="Semantic text mining, WordCloud generation, keyword frequency distribution, and VADER sentiment classification",
+    subtitle=(
+        "Review themes and "
+        + ("VADER sentiment analysis" if HAS_VADER else "rule-based keyword sentiment")
+        + " across the selected records"
+    ),
     badge="POWER BI DASHBOARD 6 • NLP & REVIEWS"
 )
 
@@ -47,7 +52,7 @@ if filtered_df.empty:
 # REAL VADER SENTIMENT CLASSIFICATION (WITH LEXICON FALLBACK)
 # -------------------------------------------------------------
 if not HAS_VADER:
-    st.info("💡 **Tip:** Install `vaderSentiment` via `pip install vaderSentiment` for advanced VADER sentiment scores. Currently running built-in sentiment classification.")
+    st.info("VADER is unavailable, so sentiment uses a simple keyword-count rule. Treat these scores as a rough text signal, not a nuanced sentiment measure.")
 
 @st.cache_data
 def compute_sentiment_scores(reviews_series):
@@ -97,93 +102,60 @@ def compute_sentiment_scores(reviews_series):
 analysis_df = filtered_df.copy()
 analysis_df['Sentiment'], analysis_df['Polarity_Score'] = compute_sentiment_scores(analysis_df['Review'])
 
-pos_pct = round((analysis_df['Sentiment'] == 'Positive').mean() * 100, 1)
-neu_pct = round((analysis_df['Sentiment'] == 'Neutral').mean() * 100, 1)
-neg_pct = round((analysis_df['Sentiment'] == 'Negative').mean() * 100, 1)
-avg_polarity = round(analysis_df['Polarity_Score'].mean(), 3)
+total_reviews = len(analysis_df)
+pos_cnt = int((analysis_df['Sentiment'] == 'Positive').sum())
+neu_cnt = int((analysis_df['Sentiment'] == 'Neutral').sum())
+neg_cnt = int((analysis_df['Sentiment'] == 'Negative').sum())
+
+if total_reviews > 0:
+    pos_pct = round(pos_cnt / total_reviews * 100, 1)
+    neu_pct = round(neu_cnt / total_reviews * 100, 1)
+    if neg_cnt == 0:
+        neg_pct = 0.0
+        neu_pct = round(100.0 - pos_pct, 1)
+    else:
+        neg_pct = round(100.0 - pos_pct - neu_pct, 1)
+else:
+    pos_pct = neu_pct = neg_pct = 0.0
+
+avg_polarity = round(analysis_df['Polarity_Score'].mean(), 3) if not analysis_df.empty else 0.0
+score_label = "VADER Compound" if HAS_VADER else "Rule-based Score"
+positive_rule = f"{pos_cnt:,} reviews (≥ +0.05)" if HAS_VADER else f"{pos_cnt:,} reviews (positive rule)"
+neutral_rule = f"{neu_cnt:,} reviews (-0.05 to +0.05)" if HAS_VADER else f"{neu_cnt:,} reviews (neutral rule)"
+negative_rule = f"{neg_cnt:,} reviews (≤ -0.05)" if HAS_VADER else f"{neg_cnt:,} reviews (negative rule)"
 
 # -------------------------------------------------------------
-# REVIEW KPIS
+# REVIEW KPIS (5 CARDS)
 # -------------------------------------------------------------
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3, c4, c5 = st.columns(5)
 with c1:
-    render_kpi_card("Total Reviews", f"{len(analysis_df):,}", "Verified tourist logs", "#0284c7", "💬")
+    render_kpi_card("Total Review Records", f"{total_reviews:,}", "Active filtered sample", "#0284c7", "💬")
 with c2:
-    render_kpi_card("Positive Sentiment", f"{pos_pct}%", "VADER polarity >= +0.05", "#10b981", "😊")
+    render_kpi_card("Positive Sentiment", f"{pos_pct:.1f}%", positive_rule, "#10b981", "😊")
 with c3:
-    render_kpi_card("Neutral / Moderate", f"{neu_pct}%", "Factual observations", "#6366f1", "😐")
+    render_kpi_card("Neutral Sentiment", f"{neu_pct:.1f}%", neutral_rule, "#6366f1", "😐")
 with c4:
-    render_kpi_card("Average Polarity", f"{avg_polarity:+0.3f}", "Scale: -1.0 to +1.0", "#f97316", "📊")
+    render_kpi_card("Negative Sentiment", f"{neg_pct:.1f}%", negative_rule, "#ef4444", "🙁")
+with c5:
+    render_kpi_card(f"Average {score_label}", f"{avg_polarity:+0.3f}", "Score range: -1 to +1", "#f97316", "📊")
 
 st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# ROW 1: WORDCLOUD & FREQUENT WORDS
+# ROW 2: WORD FREQUENCY & VADER DOUGHNUT
 # -------------------------------------------------------------
-col_wc, col_freq = st.columns([1.3, 1])
+col_words, col_doughnut = st.columns([1.35, 1.0])
 
-with col_wc:
-    st.markdown("""
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 18px 10px 18px; margin-bottom: 12px;">
-        <div style="font-size: 15px; font-weight: 700; color: #0f172a;">☁️ Tourist Review WordCloud</div>
-        <div style="font-size: 12px; color: #64748b;">Visualizing high-frequency terms extracted from visitor reviews</div>
-    </div>
-    """, unsafe_allow_html=True)
-    wc_fig = generate_review_wordcloud(analysis_df)
-    st.pyplot(wc_fig, use_container_width=True)
+with col_words:
+    st.plotly_chart(plot_top_review_words(analysis_df, top_n=10), use_container_width=True)
 
-with col_freq:
-    word_freq = get_top_review_words(analysis_df, top_n=12)
-    fig_words = px.bar(
-        word_freq,
-        x='Frequency',
-        y='Word',
-        orientation='h',
-        text='Frequency',
-        color='Frequency',
-        color_continuous_scale=px.colors.sequential.Teal,
-        title="Top 12 Most Frequently Occurring Words"
-    )
-    fig_words.update_layout(yaxis=dict(autorange="reversed"), coloraxis_showscale=False)
-    fig_words.update_traces(textposition='outside')
-    st.plotly_chart(apply_pbi_theme(fig_words), use_container_width=True)
+with col_doughnut:
+    st.plotly_chart(plot_sentiment_doughnut(analysis_df), use_container_width=True)
 
 # -------------------------------------------------------------
-# ROW 2: SENTIMENT DISTRIBUTION & REVIEW COUNT BY DESTINATION
+# ROW 3: REVIEW COUNT BY DESTINATION
 # -------------------------------------------------------------
-col_senti, col_dest_rev = st.columns([1, 1.3])
-
-with col_senti:
-    senti_counts = analysis_df['Sentiment'].value_counts().reset_index()
-    senti_counts.columns = ['Sentiment', 'Count']
-    fig_s = px.pie(
-        senti_counts,
-        names='Sentiment',
-        values='Count',
-        hole=0.6,
-        color='Sentiment',
-        color_discrete_map={'Positive': '#10b981', 'Neutral': '#64748b', 'Negative': '#f43f5e'},
-        title="VADER Sentiment Classification Split"
-    )
-    fig_s.update_traces(textinfo='percent+label', marker=dict(line=dict(color='#ffffff', width=2)))
-    st.plotly_chart(apply_pbi_theme(fig_s), use_container_width=True)
-
-with col_dest_rev:
-    dest_rev_counts = analysis_df['Place'].value_counts().head(10).reset_index()
-    dest_rev_counts.columns = ['Place', 'Reviews_Count']
-    fig_drc = px.bar(
-        dest_rev_counts,
-        x='Reviews_Count',
-        y='Place',
-        orientation='h',
-        text='Reviews_Count',
-        color='Reviews_Count',
-        color_continuous_scale=px.colors.sequential.Blues,
-        title="Top 10 Destinations by Volume of Reviews"
-    )
-    fig_drc.update_layout(yaxis=dict(autorange="reversed"), coloraxis_showscale=False)
-    fig_drc.update_traces(textposition='outside')
-    st.plotly_chart(apply_pbi_theme(fig_drc), use_container_width=True)
+st.plotly_chart(plot_review_volume_by_destination(analysis_df, top_n=10), use_container_width=True)
 
 # -------------------------------------------------------------
 # INTERACTIVE REVIEW SEARCH ENGINE
@@ -218,6 +190,7 @@ st.markdown(f"**Found {len(matched_reviews):,} matching reviews**")
 if not matched_reviews.empty:
     display_reviews = matched_reviews[['Visitor_ID', 'Place', 'State', 'Rating', 'Sentiment', 'Polarity_Score', 'Review']].copy()
     display_reviews['Polarity_Score'] = display_reviews['Polarity_Score'].round(3)
+    display_reviews = display_reviews.rename(columns={'Polarity_Score': score_label})
     st.dataframe(display_reviews, use_container_width=True, height=280)
 else:
     st.info("No reviews matched your search keyword.")
