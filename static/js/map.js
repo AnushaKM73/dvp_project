@@ -9,6 +9,7 @@ const MapEngine = {
     geoMap: null,
     geoMarkersLayer: null,
     geoBoundaryLayer: null,
+    geoSelectedPlace: "",
 
     hierMap: null,
     hierCurrentLayer: null,
@@ -152,16 +153,28 @@ const MapEngine = {
             `;
             circle.bindPopup(popupHtml);
             circle.on("click", () => {
+                const activePlace = window.App && window.App.chartFilters.place;
+                this.geoSelectedPlace = activePlace === m.place ? "" : m.place;
                 if (window.App) window.App.applyChartSelection({ place: m.place });
             });
 
             this.geoMarkersLayer.addLayer(circle);
+            // Re-open the selected destination after the cross-filter redraws the map.
+            if (this.geoSelectedPlace === m.place) {
+                circle.openPopup();
+            }
         });
 
         setTimeout(() => {
             this.geoMap.invalidateSize();
-            if (bounds.length > 0) {
+            if (bounds.length === 1) {
+                // fitBounds on one point can zoom to an unusable level and make the map
+                // look blank. Keep a useful India-scale context around the selection.
+                this.geoMap.setView(bounds[0], 6);
+            } else if (bounds.length > 1) {
                 this.geoMap.fitBounds(bounds, { padding: [30, 30] });
+            } else {
+                this.geoMap.setView([22.5, 79.5], 4.5);
             }
         }, 200);
     },
@@ -459,7 +472,7 @@ const MapEngine = {
         const cardsEl = document.getElementById("district-places-cards");
 
         panel.style.display = "block";
-        titleEl.textContent = `📍 Tourist Destinations in ${distName} (${stateName})`;
+        titleEl.textContent = `📍 Directory Entries in ${distName} (${stateName})`;
 
         if (matched.length === 0) {
             countEl.textContent = "0 Destinations";
@@ -491,17 +504,18 @@ const MapEngine = {
                         <h4>${m.place}</h4>
                         <div class="place-category">${m.category} • ${m.location_type || 'Landmark'}</div>
                         <div class="place-metrics">
-                            <div><strong>Rating:</strong> ⭐ ${m.rating}/5.0</div>
-                            <div><strong>Est. Cost:</strong> ₹${m.cost ? m.cost.toLocaleString() : 'N/A'}</div>
-                            <div><strong>Avg Stay:</strong> ${m.stay} Days</div>
+                            <div><strong>Illustrative rating:</strong> ⭐ ${m.rating}/5.0</div>
+                            <div><strong>Illustrative cost:</strong> ₹${m.cost ? m.cost.toLocaleString() : 'N/A'}</div>
+                            <div><strong>Indicative stay:</strong> ${m.stay} Days</div>
                             <div><strong>Best Time:</strong> ${m.best_time || 'All Year'}</div>
                         </div>
+                        <div class="place-data-status">Portal reference only · not individually verified · map position approximate</div>
                         ${m.taluk ? `<div style="font-size: 11.5px; color: #475569; margin: 4px 0;"><strong>Taluk / Sub-District:</strong> ${m.taluk}</div>` : ''}
                         ${m.address ? `<div class="place-address">${m.address}</div>` : ''}
                         ${m.source_url ? `
                         <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #f1f5f9; font-size: 11px;">
                             <a href="${m.source_url}" target="_blank" rel="noopener noreferrer" style="color: #0284c7; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
-                                <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 10px;"></i> Source: ${m.source_org || 'Official Government Portal'}
+                                <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 10px;"></i> Portal reference: ${m.source_org || 'Portal reference'}
                             </a>
                         </div>` : ''}
                     </div>

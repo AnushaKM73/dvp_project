@@ -559,12 +559,15 @@ _CACHED_CLEANED_DF = None
 
 def find_dataset_path():
     """Locate the dataset file dynamically."""
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     candidate_paths = [
-        os.path.join("data", "5dvp_cleaned.csv"),
-        "5dvp_cleaned.csv",
-        os.path.join("data", "5dvp.csv"),
-        "5dvp.csv",
-        "DOC-20260904-WA0015.csv"
+        # Use the supplied visitor sample as the source of truth. The larger
+        # cleaned file is an expanded derivative and is retained only as a reference.
+        os.path.join(project_root, "data", "5dvp.csv"),
+        os.path.join(project_root, "5dvp.csv"),
+        os.path.join(project_root, "DOC-20260904-WA0015.csv"),
+        os.path.join(project_root, "data", "5dvp_cleaned.csv"),
+        os.path.join(project_root, "5dvp_cleaned.csv"),
     ]
     for path in candidate_paths:
         if os.path.exists(path):
@@ -573,7 +576,7 @@ def find_dataset_path():
 
 
 def clean_tourism_data(df_raw, apply_record1_fix=True):
-    """Apply data cleaning pipeline and attach verified coordinates."""
+    """Clean visitor records and attach mapped destination coordinates."""
     df = df_raw.copy()
 
     # 1. First record correction if needed

@@ -46,7 +46,7 @@ const App = {
         },
         map: {
             title: "Interactive Hierarchical GIS Map",
-            subtitle: "3-Level Spatial Drill-Down Engine: India ➔ State Districts ➔ Verified Tourist Attractions"
+            subtitle: "Browse the prototype directory: India ➔ State ➔ District ➔ Destination"
         }
     },
 
@@ -99,6 +99,7 @@ const App = {
 
         document.getElementById("btn-clear-chart-filters").addEventListener("click", () => {
             this.chartFilters = {};
+            MapEngine.geoSelectedPlace = "";
             const reviewSearch = document.getElementById("review-keyword-input");
             if (reviewSearch) reviewSearch.value = "";
             this.updateChartFilterSummary();
@@ -295,6 +296,7 @@ const App = {
      */
     resetFilters: function() {
         this.chartFilters = {};
+        MapEngine.geoSelectedPlace = "";
         const reviewSearch = document.getElementById("review-keyword-input");
         if (reviewSearch) reviewSearch.value = "";
         this.updateChartFilterSummary();
@@ -479,6 +481,9 @@ const App = {
                 <strong>${n.top_place}</strong> boasts the highest average popularity score (${n.top_place_score}/100), 
                 while <strong>${n.top_category}</strong> represents the dominant tourism category (${n.top_category_share}%).
             `;
+        } else {
+            document.getElementById("overview-narrative-content").textContent =
+                "No visitor records match the current filters. Clear the chart selection or broaden the filters to see the overview.";
         }
 
         // Charts
@@ -739,6 +744,7 @@ const App = {
             body: JSON.stringify({ filters })
         });
         const data = await res.json();
+        this.updateRecordCount(data.filtered_count || 0);
 
         // KPIs
         const k = data.kpis;
@@ -749,8 +755,6 @@ const App = {
         document.getElementById("rev-kpi-neu-sub").textContent = `${k.neu_cnt} reviews (-0.05 to +0.05)`;
         document.getElementById("rev-kpi-neg").textContent = `${k.neg_pct}%`;
         document.getElementById("rev-kpi-neg-sub").textContent = `${k.neg_cnt} reviews (≤ -0.05)`;
-        const scoreEl = document.getElementById("rev-kpi-score");
-        if (scoreEl) scoreEl.textContent = `${k.avg_compound >= 0 ? '+' : ''}${k.avg_compound}`;
 
         // Charts
         const c = data.charts;
@@ -825,6 +829,10 @@ const App = {
 
         const medals = ["🥇 Best Match", "🥈 Top Alternative", "🥉 Value Pick"];
         const accents = ["#0284c7", "#10b981", "#f97316"];
+
+        if (!recs.length) {
+            medalGrid.innerHTML = '<div class="chart-empty-message">No destinations match the current filters and preferences. Broaden the filters or choose another preference.</div>';
+        }
 
         top3.forEach((item, idx) => {
             const card = document.createElement("div");

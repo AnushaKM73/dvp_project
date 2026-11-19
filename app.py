@@ -230,13 +230,15 @@ def api_budget_matcher():
 
 @app.route("/api/financial/cost-estimator", methods=["POST"])
 def api_cost_estimator():
-    filtered_df = get_df_from_request()
+    # The destination is selected explicitly. Use its full sample history so an
+    # unrelated active State/Category slicer cannot produce a misleading fallback.
+    estimate_df = get_cached_cleaned_data()
     data = request.get_json(silent=True) or {}
     destination = data.get("destination", "Mysore Palace")
     num_travelers = int(data.get("num_travelers", 2))
     trip_days = int(data.get("trip_days", 3))
     comfort_tier = data.get("comfort_tier", "Standard (1.0x)")
-    result = estimate_custom_trip_cost(filtered_df, destination, num_travelers, trip_days, comfort_tier)
+    result = estimate_custom_trip_cost(estimate_df, destination, num_travelers, trip_days, comfort_tier)
     return jsonify(result)
 
 
@@ -247,6 +249,7 @@ def api_cost_estimator():
 def api_reviews():
     filtered_df = get_df_from_request()
     result = get_review_analytics(filtered_df)
+    result["filtered_count"] = len(filtered_df)
     return jsonify(result)
 
 
@@ -283,11 +286,14 @@ def api_recommender():
 
 @app.route("/api/battle", methods=["POST"])
 def api_battle():
-    filtered_df = get_df_from_request()
+    # The destinations are selected explicitly in the battle controls. Compare
+    # their full visitor-sample records so a global State filter (e.g. Tamil Nadu)
+    # does not silently remove the opponent (e.g. Coorg) and leave the panel blank.
+    battle_df = get_cached_cleaned_data()
     data = request.get_json(silent=True) or {}
     dest_a = data.get("dest_a", "Mysore Palace")
     dest_b = data.get("dest_b", "Taj Mahal")
-    battle_result = compute_destination_battle(filtered_df, dest_a, dest_b)
+    battle_result = compute_destination_battle(battle_df, dest_a, dest_b)
     return jsonify(battle_result)
 
 
@@ -306,7 +312,7 @@ _INDIA_GEOJSON_CACHE = None
 
 
 def get_master_destinations():
-    """Load and cache the 5,000+ verified tourist destinations master dataset."""
+    """Load and cache the destination catalogue prototype."""
     global _MASTER_DESTINATIONS_CACHE
     if _MASTER_DESTINATIONS_CACHE is not None:
         return _MASTER_DESTINATIONS_CACHE
@@ -352,6 +358,7 @@ def get_master_destinations():
                     "region": str(row.get("Region", "Central")),
                     "source_org": str(row.get("Source_Organisation", "Official Portal")),
                     "source_url": str(row.get("Source_URL", "")),
+                    "verification_status": str(row.get("Verification_Status", "Portal reference only; not individually verified")),
                     "category_color": category_colors.get(cat, "#0284c7")
                 })
             _MASTER_DESTINATIONS_CACHE = destinations
@@ -408,7 +415,7 @@ def api_geojson(region):
 
 @app.route("/api/map/destinations", methods=["GET"])
 def api_map_destinations():
-    """Return verified landmark mappings and coordinates for the 3-level GIS engine."""
+    """Return destination catalogue entries for the 3-level GIS prototype."""
     destinations = get_master_destinations()
     return jsonify({
         "destinations": destinations,

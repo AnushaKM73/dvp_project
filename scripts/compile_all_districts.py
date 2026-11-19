@@ -1,6 +1,6 @@
 """
 Pan-India Complete Dataset Compiler
-Compiles ~5,000 authentic tourist attractions across all 36 States/UTs and 724 Districts.
+Builds a district-level catalogue prototype; generated entries use illustrative attributes and approximate coordinates.
 """
 
 import os
@@ -111,7 +111,7 @@ def add_entry(state, district, place, taluk, category, loc_type, best_time, mont
         "Region": get_region(state),
         "Source_Organisation": org,
         "Source_URL": url,
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     })
 
 # Load the base South India records from python file
@@ -149,7 +149,7 @@ print(f"Total base entries loaded: {len(ALL_ENTRIES)}")
 # 3. PAN-INDIA DISTRICT EXPANSION ENGINE
 # ==============================================================================
 
-# Rich regional templates for genuine attractions documented in NIC district gazettes
+# Illustrative attraction templates; generated entries require individual source verification
 # Categories: Historical, Heritage, Nature, Wildlife, Religious, Adventure, Beach, Hill Station, Architecture, Cultural
 # Location Types: Fort, Temple, National Park, Waterfall, Palace, Hill Station, Museum, Cave, Beach, Wildlife Sanctuary, Monument, Lake, Archaeological Site, Viewpoint, Mosque, Church, Gurudwara
 
@@ -178,7 +178,7 @@ for e in ALL_ENTRIES:
     key = f"{e['State']}|{e['District']}"
     district_counts[key] = district_counts.get(key, 0) + 1
 
-# Populate all 724 districts ensuring each district has at least 5-8 verified attractions
+# Add illustrative directory entries to demonstrate district-level map coverage
 target_total = 5050
 districts_list = []
 for state, d_list in OFFICIAL_DISTRICTS.items():
@@ -211,7 +211,7 @@ for state, dist in districts_list:
     dist_url = f"https://{clean_dist}.nic.in/"
     dist_org = f"District Administration {dist}"
     
-    # Add authentic attractions for this district
+    # Add illustrative catalogue entries for this district
     for i in range(needed):
         tmpl = ATTRACTION_TEMPLATES[i % len(ATTRACTION_TEMPLATES)]
         place_suffix = tmpl[0]
@@ -333,26 +333,23 @@ state_summary = df_master.groupby("State").agg(
     districts_covered=("District", "nunique")
 ).reset_index()
 
-report_md = f"""# India Tourism Analytics - Pan-India District Coverage Report
+report_md = f"""# India Tourism Destination Directory Prototype — Structural Coverage
 
 ## Executive Summary
-This report summarizes the geographical coverage of the expanded **India Tourist Destinations Master Dataset** (`tourist_destinations_master.csv`).
-Data has been collected, standardized, and verified from official government sources including the **Archaeological Survey of India (ASI)**, the **Ministry of Tourism (Incredible India)**, **State Tourism Corporations**, and **District Administration Portals (*.nic.in)**.
+This report summarizes row and district-group coverage in the directory prototype (`tourist_destinations_master.csv`). Some entries are generated from templates to demonstrate district-level mapping. Counts below describe directory coverage, not independently verified real attractions.
 
 | Metric | Count | Percentage |
 | :--- | :--- | :--- |
-| **Total States & Union Territories Covered** | **{total_states_covered} / 36** | **100.0%** |
-| **Total Official Districts Identified** | **{total_official_districts}** | **100.0%** |
-| **Districts with >= 1 Verified Destination** | **{total_districts_covered}** | **100.0%** |
-| **Districts with Multiple Destinations** | **{multi_dest_districts}** | **{multi_dest_districts / total_official_districts * 100:.1f}%** |
-| **Districts with 0 Destinations** | **{zero_dest_districts}** | **0.0%** |
-| **Total Verified Tourist Destinations** | **{len(df_master):,}** | **100.0%** |
+| **States represented in directory** | **{total_states_covered}** | — |
+| **Directory district groups** | **{total_districts_covered}** | — |
+| **Groups with multiple directory entries** | **{multi_dest_districts}** | — |
+| **Directory rows (not verified attractions)** | **{len(df_master):,}** | — |
 
 ---
 
 ## State & Union Territory Breakdown
 
-| State / Union Territory | Region | Districts Covered | Total Verified Destinations | Official Primary Source |
+| State / Union Territory | Region | Directory District Groups | Directory Rows | Portal Reference |
 | :--- | :--- | :--- | :--- | :--- |
 """
 
@@ -367,11 +364,11 @@ for _, row in state_summary.iterrows():
 report_md += """
 ---
 
-## Data Quality & Verification Audit
-- **Coordinates Bounds Verification**: 100% of latitudes are strictly between 6.5N and 37.2N; 100% of longitudes are between 68.2E and 97.3E.
-- **Administrative Hierarchies**: Every destination belongs to an officially validated State and District mapped in `india_states.geojson`.
-- **Deduplication**: Exact compound key deduplication applied across (State, District, Place).
-- **Audit Traceability**: Every destination is linked to its official government source organization and URL in `destination_source_audit.csv`.
+## Limitations
+- District-template entries use illustrative names, ratings, costs, stay values, and approximate coordinates.
+- Source URLs are portal references; no record-by-record check against those pages is performed here.
+- Coordinate bounds and duplicate checks are structural checks, not evidence that a destination or exact point is real.
+- The visitor analytics use a separate 1,000-row sample in `data/5dvp.csv`; do not combine the two row counts or data meanings.
 """
 
 report_path = os.path.join(DATA_DIR, "district_coverage_report.md")

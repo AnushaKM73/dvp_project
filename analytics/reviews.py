@@ -121,7 +121,20 @@ def get_review_analytics(df):
     Calculate VADER sentiment breakdown, top review terms, and review charts.
     """
     if df.empty:
-        return {}
+        return {
+            "kpis": {
+                "total_reviews": 0,
+                "pos_cnt": 0,
+                "pos_pct": 0.0,
+                "neu_cnt": 0,
+                "neu_pct": 0.0,
+                "neg_cnt": 0,
+                "neg_pct": 0.0,
+                "avg_compound": 0.0,
+                "has_vader": HAS_VADER
+            },
+            "charts": {}
+        }
 
     analysis_df = df.copy()
     sentiments, comp_scores = compute_vader_scores(analysis_df['Review'])

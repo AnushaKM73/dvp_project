@@ -62,9 +62,14 @@ const Charts = {
      */
     render: function(containerId, figure) {
         const el = document.getElementById(containerId);
-        if (!el || !figure || !figure.data) {
+        if (!el) return;
+        if (!figure || !Array.isArray(figure.data) || figure.data.length === 0) {
+            if (window.Plotly && el.data) Plotly.purge(el);
+            el.classList.add("chart-empty-state");
+            el.innerHTML = '<div class="chart-empty-message">No records match the current filters. Clear the chart selection or broaden the filters.</div>';
             return;
         }
+        el.classList.remove("chart-empty-state");
 
         const data = figure.data || [];
         const layout = figure.layout || {};
@@ -72,14 +77,37 @@ const Charts = {
         // Ensure modern font and responsive defaults
         layout.autosize = true;
         layout.clickmode = "event+select";
-        layout.margin = layout.margin || { l: 40, r: 30, t: 40, b: 40 };
+        layout.margin = Object.assign({ l: 40, r: 30, t: 60, b: 48 }, layout.margin || {});
+        layout.margin.t = Math.max(Number(layout.margin.t) || 0, 60);
+        layout.margin.b = Math.max(Number(layout.margin.b) || 0, 48);
         layout.font = layout.font || {};
         layout.font.family = "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif";
 
+        // Keep labels readable on narrow cards and avoid raw dataframe field names.
+        data.forEach(trace => {
+            if (trace.type === "bar") trace.cliponaxis = false;
+            if (trace.type === "pie") {
+                // Put values inside slices and let the legend identify categories;
+                // outside labels were colliding with legends in narrow chart cards.
+                trace.textinfo = "percent";
+                trace.textposition = "inside";
+                trace.insidetextorientation = "auto";
+            }
+        });
+        ["xaxis", "yaxis", "xaxis2", "yaxis2"].forEach(axisName => {
+            const axis = layout[axisName];
+            if (axis && axis.title && typeof axis.title.text === "string") {
+                axis.title.text = axis.title.text.replace(/_/g, " ");
+            } else if (axis && typeof axis.title === "string") {
+                axis.title = axis.title.replace(/_/g, " ");
+            }
+        });
+
         const config = {
             responsive: true,
-            displayModeBar: false,
-            displaylogo: false
+            displayModeBar: "hover",
+            displaylogo: false,
+            scrollZoom: true
         };
 
         Plotly.newPlot(el, data, layout, config).then(() => {

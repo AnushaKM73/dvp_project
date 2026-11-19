@@ -1,6 +1,7 @@
 """
-Data Cleaning and Verification Script for India Tourist Destinations Master Dataset
-Validates schema, geographic bounds, official sources, and district coverage.
+Structural QA Script for the Destination Catalogue Prototype
+Checks schema, coarse coordinate bounds, URL format, and district counts. It does not
+verify that each named attraction, source URL, rating, cost, or exact location is authentic.
 """
 
 import os
@@ -10,7 +11,7 @@ import pandas as pd
 import numpy as np
 
 def run_verification(csv_path="data/tourist_destinations_master.csv"):
-    print(f"=== Running Verification on: {csv_path} ===")
+    print(f"=== Running structural checks on: {csv_path} ===")
     
     if not os.path.exists(csv_path):
         print(f"ERROR: File {csv_path} does not exist.")
@@ -42,14 +43,14 @@ def run_verification(csv_path="data/tourist_destinations_master.csv"):
     # Geographic bounds check
     lat_min, lat_max = df["Latitude"].min(), df["Latitude"].max()
     lon_min, lon_max = df["Longitude"].min(), df["Longitude"].max()
-    print(f"✓ Latitude range: {lat_min:.4f} to {lat_max:.4f} (Valid India bounds: 6.5 to 37.5)")
-    print(f"✓ Longitude range: {lon_min:.4f} to {lon_max:.4f} (Valid India bounds: 68.0 to 97.5)")
+    print(f"✓ Latitude range: {lat_min:.4f} to {lat_max:.4f} (coarse India bounding box check)")
+    print(f"✓ Longitude range: {lon_min:.4f} to {lon_max:.4f} (coarse India bounding box check)")
     assert 6.5 <= lat_min and lat_max <= 37.5, "Latitude out of bounds"
     assert 68.0 <= lon_min and lon_max <= 97.5, "Longitude out of bounds"
     
     # URL validation
     valid_urls = df["Source_URL"].str.startswith("http").all()
-    print(f"✓ Source URLs valid: {valid_urls}")
+    print(f"✓ Source URL strings use http(s): {valid_urls}; destinations were not checked against those pages")
     
     # Official districts validation
     with open("scratch/official_districts.json", "r", encoding="utf-8") as f:
@@ -67,8 +68,8 @@ def run_verification(csv_path="data/tourist_destinations_master.csv"):
     single_dest = (dist_counts == 1).sum()
     zero_dest = max(0, total_official_districts - covered_districts)
     
-    print(f"✓ Total Official Districts Covered: {covered_districts} / {total_official_districts} (100.0%)")
-    print(f"✓ Districts with multiple attractions: {multi_dest} (100.0%)")
+    print(f"✓ Directory district groups: {covered_districts}; official-name matching was not performed")
+    print(f"✓ Directory groups with multiple entries: {multi_dest}")
     print(f"✓ Districts with single attraction: {single_dest}")
     print(f"✓ Districts with zero attractions: {zero_dest}")
     
@@ -77,7 +78,7 @@ def run_verification(csv_path="data/tourist_destinations_master.csv"):
     print(f"✓ Average Rating: {df['Rating'].mean():.2f} / 5.0 (Min: {df['Rating'].min()}, Max: {df['Rating'].max()})")
     print(f"✓ Average Estimated Cost: ₹{df['Estimated_Cost_INR'].mean():,.0f} (Min: ₹{df['Estimated_Cost_INR'].min()}, Max: ₹{df['Estimated_Cost_INR'].max()})")
     
-    print("\n=== All Verification Tests Passed Successfully! ===")
+    print("\n=== Structural checks completed; source authenticity was not verified. ===")
     return True
 
 if __name__ == "__main__":

@@ -233,10 +233,13 @@ def compute_destination_battle(df, dest_a, dest_b):
             radialaxis=dict(visible=True, range=[1.5, 5.2], gridcolor="#e2e8f0"),
             angularaxis=dict(gridcolor="#e2e8f0")
         ),
-        title=f"Head-to-Head Benchmark: {dest_a} vs. {dest_b}",
-        legend=dict(orientation='h', yanchor='bottom', y=1.05, xanchor='center', x=0.5)
+        # Destination names already appear in the legend and page heading.
+        # A second long title overlapped the legend on compact dashboard cards.
+        showlegend=True,
+        legend=dict(orientation='h', yanchor='bottom', y=1.08, xanchor='center', x=0.5)
     )
     apply_theme(fig_battle)
+    fig_battle.update_layout(margin=dict(l=45, r=30, t=72, b=40))
 
     # Determine attribute wins
     wins_a = 0

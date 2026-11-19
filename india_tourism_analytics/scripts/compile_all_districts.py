@@ -1,6 +1,6 @@
 """
 Pan-India Complete Dataset Compiler
-Compiles ~5,000 authentic tourist attractions across all 36 States/UTs and 724 Districts.
+Builds a district-level catalogue prototype; generated entries use illustrative attributes and approximate coordinates.
 """
 
 import os
@@ -111,7 +111,7 @@ def add_entry(state, district, place, taluk, category, loc_type, best_time, mont
         "Region": get_region(state),
         "Source_Organisation": org,
         "Source_URL": url,
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     })
 
 # Load the base South India records from python file
@@ -149,7 +149,7 @@ print(f"Total base entries loaded: {len(ALL_ENTRIES)}")
 # 3. PAN-INDIA DISTRICT EXPANSION ENGINE
 # ==============================================================================
 
-# Rich regional templates for genuine attractions documented in NIC district gazettes
+# Illustrative attraction templates; generated entries require individual source verification
 # Categories: Historical, Heritage, Nature, Wildlife, Religious, Adventure, Beach, Hill Station, Architecture, Cultural
 # Location Types: Fort, Temple, National Park, Waterfall, Palace, Hill Station, Museum, Cave, Beach, Wildlife Sanctuary, Monument, Lake, Archaeological Site, Viewpoint, Mosque, Church, Gurudwara
 
@@ -178,7 +178,7 @@ for e in ALL_ENTRIES:
     key = f"{e['State']}|{e['District']}"
     district_counts[key] = district_counts.get(key, 0) + 1
 
-# Populate all 724 districts ensuring each district has at least 5-8 verified attractions
+# Add illustrative directory entries to demonstrate district-level map coverage
 target_total = 5050
 districts_list = []
 for state, d_list in OFFICIAL_DISTRICTS.items():
@@ -211,7 +211,7 @@ for state, dist in districts_list:
     dist_url = f"https://{clean_dist}.nic.in/"
     dist_org = f"District Administration {dist}"
     
-    # Add authentic attractions for this district
+    # Add illustrative catalogue entries for this district
     for i in range(needed):
         tmpl = ATTRACTION_TEMPLATES[i % len(ATTRACTION_TEMPLATES)]
         place_suffix = tmpl[0]

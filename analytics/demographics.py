@@ -114,8 +114,16 @@ def get_demographics_charts(df):
         color_discrete_map={'Male': '#0284c7', 'Female': '#ec4899', 'Other': '#8b5cf6'},
         title="Gender Representation"
     )
-    fig_gender.update_traces(textinfo='percent+label', marker=dict(line=dict(color='#ffffff', width=2)))
+    # Put percentages on the slices and retain a separate legend; external labels
+    # plus a side legend collided in the narrow three-column dashboard card.
+    fig_gender.update_traces(
+        textinfo='percent',
+        textposition='inside',
+        marker=dict(line=dict(color='#ffffff', width=2))
+    )
+    fig_gender.update_layout(legend=dict(orientation='v', yanchor='middle', y=0.5, xanchor='left', x=1.02))
     apply_theme(fig_gender)
+    fig_gender.update_layout(margin=dict(l=20, r=115, t=60, b=40))
 
     # 3. Travel group dynamics
     group_counts = df['Travel_Group'].value_counts().reset_index()

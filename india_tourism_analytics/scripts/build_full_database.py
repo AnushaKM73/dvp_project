@@ -1,6 +1,6 @@
 """
 Comprehensive India Tourist Destinations Master Generator
-Generates ~5,000 authentic tourist attractions covering all 36 States/UTs and 724 Districts.
+Builds a district-level destination catalogue prototype with illustrative generated entries and approximate coordinates.
 """
 
 import os
@@ -111,7 +111,7 @@ def add_entry(state, district, place, taluk, category, loc_type, best_time, mont
         "Region": get_region(state),
         "Source_Organisation": org,
         "Source_URL": url,
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     })
 
 # Load the existing South India records

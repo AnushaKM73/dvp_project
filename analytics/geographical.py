@@ -83,7 +83,7 @@ def get_geographical_kpis(df):
 def get_destination_markers(df):
     """
     Extract aggregated destination pins with coordinates, category color,
-    and verified popup metrics.
+    and sample-based popup metrics.
     """
     if df.empty:
         return []

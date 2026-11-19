@@ -253,7 +253,16 @@ def get_segment_metric_chart(df, dimension="Category", metric="Visitor records")
 def get_performance_kpis(df):
     """KPIs for Tourism Performance dashboard."""
     if df.empty:
-        return {}
+        return {
+            "top_rated_place": "N/A",
+            "top_rated_state": "N/A",
+            "top_rated_val": 0.0,
+            "most_popular_place": "N/A",
+            "most_popular_state": "N/A",
+            "most_popular_val": 0.0,
+            "avg_cleanliness": 0.0,
+            "avg_safety": 0.0
+        }
     dest_grouped = df.groupby(['Place', 'State']).agg(
         Avg_Rating=('Rating', 'mean'),
         Popularity_Score=('Popularity_Score', 'mean')
@@ -319,7 +328,7 @@ def get_performance_charts(df):
         fill='toself',
         fillcolor='rgba(2, 132, 199, 0.25)',
         line=dict(color='#0284c7', width=2),
-        name='National Average'
+        name='Current Sample Average'
     ))
     fig_radar.update_layout(
         polar=dict(

@@ -26,7 +26,7 @@ def add_place(state, district, place, taluk, category, loc_type, best_time, mont
         "Region": "South",
         "Source_Organisation": org,
         "Source_URL": url,
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     })
 
 # ==========================================

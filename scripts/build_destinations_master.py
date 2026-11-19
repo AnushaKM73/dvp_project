@@ -1,6 +1,6 @@
 """
 Comprehensive Master Tourist Destinations Dataset Builder for India Tourism Analytics
-Generates ~5,000 verified tourist destination records across all 36 States/UTs and 724 Districts.
+Builds a destination catalogue prototype; generated entries are not individually verified.
 Integrates official sources: ASI, Ministry of Tourism (Incredible India), State Tourism Portals, District NIC Portals.
 """
 

@@ -1,149 +1,95 @@
-# INDIA TOURISM ANALYTICS AND BUSINESS INTELLIGENCE DASHBOARD
-> **Tagline:** *Discover Destinations. Analyse Tourism. Visualize Insights.*  
-> **Course:** Data Visualization with Python (DVP) Laboratory Project  
+# India Tourism Decision Lab
 
----
+An interactive **Data Visualization with Python (DVP)** project for exploring a visitor sample, comparing destination patterns, and demonstrating how visual analytics can support a trip-planning decision.
 
-## 🌟 Executive Summary
+## Project question
 
-**India Tourism Analytics and Business Intelligence Dashboard** is an academic Data Visualization with Python (DVP) laboratory project designed to provide business intelligence, geospatial mapping, demographic segmentation, financial expense modeling, and NLP review analytics for Indian tourism.
+**How can interactive visualizations help us explore visitor patterns and compare destinations by experience, season, and estimated cost?**
 
-The project models approximately **1,000 tourist records** across **20 iconic Indian destinations** and **16 states/UTs**, implementing data preprocessing, statistical inference, interactive visual analytics, and **Power BI Desktop** data exports.
+The dashboard follows a simple path: **Explore the sample → Compare destinations → Plan an illustrative trip.**
 
----
+## Important data boundary
 
-## 🛠️ Technology Stack
+The project contains two separate datasets. Do not combine their row counts or interpret them as the same kind of evidence.
 
-| Layer | Technologies Used |
-| :--- | :--- |
-| **Core Language** | Python 3.10+ |
-| **Data Processing & Analytics** | Pandas, NumPy |
-| **Statistical Visualizations** | Matplotlib, Seaborn |
-| **Interactive BI Visualizations** | Plotly, Plotly Express |
-| **Geospatial Mapping** | Folium, Streamlit-Folium |
-| **Text Mining & NLP** | WordCloud, VADER Sentiment Analysis |
-| **Application Framework** | Streamlit (Power BI-inspired theme) |
-| **Report Generation & BI** | OpenPyXL, Python CSV Engine |
+### Visitor analytics sample
 
----
+- File: `data/5dvp.csv`
+- 1,000 rows, 20 destinations, 16 states, and 22 original columns
+- Used for the dashboard KPIs, charts, ratings, costs, demographics, recommendations, and review demonstrations
+- The repository does not record the dataset's original publisher or collection method. Treat results as patterns in this sample, not estimates for all Indian tourists.
+- The sample has only eight distinct review phrases. VADER sentiment is included as a text-analysis demonstration and should not be presented as representative public opinion.
 
-## 📊 Dataset Schema (`5dvp.csv`)
+### Destination directory prototype
 
-The dataset comprises **1,000 rows** and **22 feature attributes**:
+- File: `data/tourist_destinations_master.csv` (5,110 directory rows)
+- Used only by the hierarchical map to demonstrate India → state → district → listing navigation
+- The catalogue mixes a curated base list with generated district-template entries. Portal URLs are references, not proof that each listing was independently checked.
+- Generated coordinates, ratings, costs, and stay lengths are illustrative. This file is not a verified official attractions register and must not be used to report visitor counts or factual destination scores.
+- Details and limitations: [`data/district_coverage_report.md`](data/district_coverage_report.md)
 
-1. `Visitor_ID`: Unique traveler transaction identifier (`V0001` - `V1000`)
-2. `State`: Indian State or Union Territory
-3. `Place`: Renowned tourist landmark / destination (20 unique places)
-4. `Address`: Administrative location details
-5. `Category`: Tourism classification (`Nature`, `Historical`, `Cultural`, `Beach`, `Adventure`)
-6. `Location_Type`: Geographic profile (`Hill Station`, `City`, `Heritage`, `Beach`, `Desert`, `Backwaters`)
-7. `Best_Time_to_Visit`: Optimal climate window
-8. `Visit_Month`: Calendar month of visit
-9. `Season`: Season (`Winter`, `Summer`, `Monsoon`, `Spring`, `Autumn`)
-10. `Age_Group`: Visitor age cohort (`18-25`, `26-35`, `36-50`, `51-65`, `65+`)
-11. `Gender`: Gender representation (`Male`, `Female`, `Non-binary`, `Prefer not to say`)
-12. `Travel_Group`: Travel party composition (`Solo`, `Couple`, `Family`, `Friends`, `Organized Group`)
-13. `Review`: Visitor review text
-14. `Rating`: Satisfaction score (1.0 to 5.0)
-15. `Estimated_Cost_INR`: Trip cost in Indian Rupees (₹)
-16. `Stay_Days`: Duration of trip in days
-17. `Visitors_Count`: Estimated footfall volume
-18. `Popularity_Score`: Normalized demand index (0 to 100)
-19. `Cleanliness_Rating`: Sanitation score (1.0 to 5.0)
-20. `Safety_Rating`: Tourist safety score (1.0 to 5.0)
-21. `Accessibility_Rating`: Infrastructure accessibility score (1.0 to 5.0)
-22. `Recommended`: Binary traveler advocacy recommendation (`Yes` / `No`)
+## What the dashboard does
 
----
+The root-level Flask app contains eight connected views:
 
-## 🔬 Data Cleaning & Preprocessing Pipeline
+1. **Executive Overview** — sample KPIs, an automated takeaway, and a dimension/metric explorer.
+2. **Geographical Analysis** — visitor-sample destination markers and state/category comparisons.
+3. **Tourist Demographics** — age, gender, travel-group, and age-by-group patterns.
+4. **Tourism Performance** — satisfaction/popularity comparison, quality measures, and destination rankings.
+5. **Financial Analysis** — budget matcher, configurable illustrative trip estimator, and cost patterns.
+6. **Review Analytics** — keyword/review explorer and VADER text summaries, with the repeated-text limitation above.
+7. **Recommender & Battle** — rule-based destination matching, an explainable score, pairwise comparison, and a 3D view.
+8. **Interactive Map** — hierarchical browsing of the separate destination-directory prototype.
 
-Implemented in `utils/data_cleaning.py`:
-1. **First Record Correction (Python Logic):** Repaired malformed initial record for `Visitor_ID: V0001` (Munnar, Kerala) with verified attributes. A toggle switch in the UI allows enabling or disabling this correction dynamically.
-2. **Type Casting:** Numerical features converted from text strings into proper `float64` and `int64`.
-3. **Missing Value Imputation:** Numerical missing values imputed using feature **median**; categorical missing values imputed using feature **mode**.
-4. **Duplicate Handling:** Verified that no duplicate records skew the statistics.
-5. **Geographical Coordinates:** Exact latitude and longitude coordinates attached for the 20 Indian destinations for mapping.
+Global sidebar filters recalculate visitor-sample views. Clickable chart marks can add cross-filters; the selection bar shows and clears them. The destination-directory map remains a separate prototype view.
 
----
+## How the recommendation score works
 
-## 🖥️ Application Architecture & Dashboards
+The destination matcher uses a transparent weighted rule, not machine learning or a probability:
 
-```text
-dvp/
-├── app.py                             # Main Landing Portal & Executive KPI Cards
-├── data/
-│   ├── 5dvp.csv                       # Raw source dataset
-│   └── 5dvp_cleaned.csv               # Python cleaned dataset
-├── pages/
-│   ├── 1_Executive_Overview.py        # Power BI Executive KPI Dashboard
-│   ├── 2_Geographical_Analysis.py     # Interactive Folium India GIS Map
-│   ├── 3_Tourist_Demographics.py      # Age, gender & travel cohort heatmaps
-│   ├── 4_Tourism_Performance.py       # Ratings, popularity & quality benchmarks
-│   ├── 5_Financial_Analysis.py        # Expense modeling & budget simulator
-│   ├── 6_Review_Analytics.py          # NLP text analytics & VADER sentiment engine
-│   ├── 7_AI_Recommender_&_Battle.py   # MCDA trip matcher, destination battle & 3D space
-│   └── 8_Map.py                       # 3-level Leaflet GIS map: India ➔ Districts ➔ Places
-├── utils/
-│   ├── data_cleaning.py               # Preprocessing & imputation routines
-│   ├── data_analysis.py               # Statistical aggregations & metrics
-│   ├── visualizations.py              # Plotly, Matplotlib, Seaborn, Folium charts
-│   ├── insights.py                    # Dynamic algorithmic business insights
-│   ├── report_generator.py            # OpenPyXL multi-tab Excel & CSV generator
-│   └── ui_components.py               # Custom CSS & Power BI sidebar slicers
-├── exports/                           # Power BI ready dimension tables (.csv)
-├── requirements.txt                   # Project dependencies
-└── README.md                          # Laboratory documentation
+| Criterion | Weight |
+| --- | ---: |
+| Theme fit | 30% |
+| Budget fit | 25% |
+| Average rating | 20% |
+| Travel-group rating | 15% |
+| Season evidence | 10% |
+
+The dashboard displays the reasons and visitor-record counts behind recommendations. Scores describe compatibility with the selected preferences under this rule; they are not guaranteed outcomes.
+
+## Technology
+
+- **Backend:** Python, Flask, Pandas, NumPy
+- **Charts:** Plotly
+- **Maps:** Leaflet, GeoJSON, OpenStreetMap tiles
+- **Text analysis:** VADER Sentiment
+- **Frontend:** HTML, CSS, JavaScript
+
+## Run the dashboard
+
+Open PowerShell in the repository root (`D:\dvp_proj\dvp_project`) and run:
+
+```powershell
+python -m pip install -r requirements.txt
+python app.py
 ```
 
----
+Open [http://127.0.0.1:5000](http://127.0.0.1:5000). Keep the terminal open while presenting. After code changes, restart the server and refresh with **Ctrl+F5**.
 
-## 🚀 How to Run the Application
+`run_dashboard.bat` launches the same root Flask app. For the current demo, use root-level `app.py`; older Streamlit files are retained from an earlier project iteration.
 
-### 1. Ensure Dependencies are Installed
-```bash
-pip install -r requirements.txt
-```
+## Suggested demonstration story
 
-### 2. Launch the Streamlit Application
-```bash
-streamlit run app.py
-```
+1. Start with the overview and explain that the figures describe the 1,000-row sample.
+2. Filter to a state or travel group, then click a chart mark to show cross-filtering.
+3. Compare performance and cost for destinations represented in the visitor sample.
+4. Open the recommender, explain the five score weights, and compare its top two suggestions.
+5. Finish with the map as a separate GIS navigation prototype; state clearly that its catalogue and estimates are illustrative.
 
-The application will launch automatically in your web browser at:
-`http://localhost:8501`
+## Report and presentation guardrails
 
----
-
-## 💼 Power BI Desktop Integration
-
-The application generates Star-Schema compatible tables in `exports/` and a consolidated multi-tab Excel report: `exports/India_Tourism_BI_Report.xlsx`.
-
-### Importing into Power BI Desktop:
-1. Open **Power BI Desktop**.
-2. Click **Get Data** &rarr; **Excel Workbook** &rarr; Select `India_Tourism_BI_Report.xlsx`.
-3. Select sheets:
-   - `Cleaned_Data` (Fact Table)
-   - `Destination_Master` (Dimension Table)
-   - `State_Analysis` (Dimension Table)
-   - `Category_Insights` (Dimension Table)
-   - `Monthly_Trends` (Dimension Table)
-4. Model Relationships:
-   - `Cleaned_Data[Place]` &rarr; `Destination_Master[Place]` (Many-to-One)
-   - `Cleaned_Data[State]` &rarr; `State_Analysis[State]` (Many-to-One)
-   - `Cleaned_Data[Category]` &rarr; `Category_Insights[Category]` (Many-to-One)
-
----
-
-## 🎓 Laboratory Presentation Highlights for Faculty
-
-* **Dynamic Python Calculations:** Zero hardcoded dashboard values; all charts, KPIs, and insights calculate dynamically based on active filters.
-* **Global Filter Panel:** Interactive sidebar slicers (State, Category, Season, Age Group, Gender, Travel Group) that synchronously update all charts and tables.
-* **Live Segment & Metric Explorer:** Compare visitor records, estimated footfall, ratings, trip cost, stay length, and popularity by destination, state, category, season, travel group, or age group.
-* **Destination Sunburst:** Drill from state to tourism category to destination, sized by estimated footfall and colored by average rating.
-* **Interactive India GIS Mapping:** Switch between destination clusters and a smoothed heat layer weighted by estimated visitor counts at mapped destination coordinates.
-* **Visitor Patterns Lab:** Sankey links travel group, tourism category, sample-relative budget quartile, and recommendation; a companion bubble plot compares destination cost, rating, and sample size.
-* **Review Text Analysis:** Stopword-filtered word cloud and VADER sentiment, with an explicitly labeled keyword fallback when the package is unavailable.
-* **Rigorous Statistical EDA:** Parametric distributions, skewness analysis, IQR outlier fences, and correlation heatmaps with Seaborn.
-
-
+- Call dashboard values **sample results**; do not generalize them to all Indian tourists.
+- Distinguish visitor records from destination-directory listings.
+- Describe the matcher as a weighted rule-based recommender, not an AI prediction model.
+- Describe the map catalogue as a prototype with portal references and approximate generated attributes.
+- Cite the original publisher of `5dvp.csv` in the final report if your course brief or instructor supplies that source; it is not documented in this repository.

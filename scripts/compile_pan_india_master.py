@@ -1,6 +1,6 @@
 """
 Pan-India Master Tourist Destinations Compiler
-Generates approximately 5,000 genuine tourist destination records across all 36 States/UTs and 724 Districts.
+Builds a destination catalogue prototype; generated entries require individual source verification.
 Outputs:
 1. data/tourist_destinations_master.csv
 2. tourist_destinations_master.csv
@@ -121,7 +121,7 @@ def add_entry(state, district, place, taluk, category, loc_type, best_time, mont
         "Region": get_region(state),
         "Source_Organisation": org,
         "Source_URL": url,
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     })
 
 # Load the existing South India base records

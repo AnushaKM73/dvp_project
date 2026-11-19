@@ -1,6 +1,6 @@
 """
 Complete Production Generator for India Tourist Destinations Master Dataset
-Produces ~5,000 genuine tourist attractions across all 36 States/UTs and 724 Districts.
+Builds a destination catalogue prototype; generated entries use illustrative attributes and approximate coordinates.
 Outputs:
 1. data/tourist_destinations_master.csv
 2. tourist_destinations_master.csv
@@ -125,7 +125,7 @@ def add_record(state, district, place, taluk, category, loc_type, best_time, mon
         "Region": get_region(state),
         "Source_Organisation": org,
         "Source_URL": url,
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     })
 
 # Add base South India records

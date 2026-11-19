@@ -1,5 +1,5 @@
 """
-Database expander and compiler for 5,000+ authentic Indian tourist destinations.
+Builder for a district-level destination catalogue prototype.
 """
 
 import sys

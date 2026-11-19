@@ -44,7 +44,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -65,7 +65,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -86,7 +86,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Archaeological Survey of India (ASI)",
         "Source_URL": "https://asi.nic.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -107,7 +107,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -128,7 +128,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Archaeological Survey of India (ASI)",
         "Source_URL": "https://asi.nic.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
 
     # -------------------------------------------------------------
@@ -153,7 +153,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -174,7 +174,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -195,7 +195,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Zoo Authority of Karnataka",
         "Source_URL": "https://mysorezoo.info/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -216,7 +216,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Archaeological Survey of India (ASI)",
         "Source_URL": "https://asi.nic.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -237,7 +237,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Indian Railways Heritage",
         "Source_URL": "https://indianrailways.gov.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
 
     # -------------------------------------------------------------
@@ -262,7 +262,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -283,7 +283,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -304,7 +304,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -325,7 +325,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -346,7 +346,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -367,7 +367,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "District Administration Dakshina Kannada",
         "Source_URL": "https://dk.nic.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
 
     # -------------------------------------------------------------
@@ -392,7 +392,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Incredible India",
         "Source_URL": "https://incredibleindia.gov.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -413,7 +413,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -434,7 +434,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -455,7 +455,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Incredible India",
         "Source_URL": "https://incredibleindia.gov.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -476,7 +476,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -497,7 +497,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Forest Department Karnataka",
         "Source_URL": "https://aranya.gov.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -518,7 +518,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -539,7 +539,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "District Administration Uttara Kannada",
         "Source_URL": "https://uttarakannada.nic.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
 
     # -------------------------------------------------------------
@@ -564,7 +564,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Incredible India",
         "Source_URL": "https://incredibleindia.gov.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -585,7 +585,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Forest Department Karnataka",
         "Source_URL": "https://aranya.gov.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
 
     # -------------------------------------------------------------
@@ -610,7 +610,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -631,7 +631,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -652,7 +652,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "District Administration Chikkamagaluru",
         "Source_URL": "https://chikkamagaluru.nic.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
 
     # -------------------------------------------------------------
@@ -677,7 +677,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -698,7 +698,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Forest Department Karnataka",
         "Source_URL": "https://aranya.gov.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -719,7 +719,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Forest Department Karnataka",
         "Source_URL": "https://aranya.gov.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
 
     # -------------------------------------------------------------
@@ -744,7 +744,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -765,7 +765,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "District Administration Hassan",
         "Source_URL": "https://hassan.nic.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
 
     # -------------------------------------------------------------
@@ -790,7 +790,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -811,7 +811,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Department of Kannada & Culture",
         "Source_URL": "https://kannadasiri.karnataka.gov.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
     {
         "State": "Karnataka",
@@ -832,7 +832,7 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Incredible India",
         "Source_URL": "https://incredibleindia.gov.in/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     },
 
     # -------------------------------------------------------------
@@ -857,12 +857,12 @@ KARNATAKA_ADDITIONS = [
         "Region": "South",
         "Source_Organisation": "Karnataka Tourism",
         "Source_URL": "https://karnatakatourism.org/",
-        "Verification_Status": "Verified - Official Government Portal"
+        "Verification_Status": "Portal reference listed; not individually verified"
     }
 ]
 
 df_new = pd.DataFrame(KARNATAKA_ADDITIONS)
-print(f"Adding {len(df_new)} new authentic Karnataka tourist landmarks.")
+print(f"Adding {len(df_new)} Karnataka directory entries with portal references.")
 
 # Add to master dataset, avoiding duplicates by (State, District, Place)
 existing_keys = set(zip(df["State"].str.lower().str.strip(), df["District"].str.lower().str.strip(), df["Place"].str.lower().str.strip()))
